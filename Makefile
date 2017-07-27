@@ -1,13 +1,13 @@
 # 1. path to gromacs/src/tools (source folder)
-SRCTOOLS     = /home/vgapsys/Downloads/gromacs-4.6.2/gromacs/src/tools
+SRCTOOLS     = .../gromacs-4.6.2/gromacs/src/tools
 # 2. path to gromacs/include/gromacs (folder where gromacs is compiled)
-INCLUDE      = /home/vgapsys/gromacs-462_clean/include/gromacs
+INCLUDE      = .../gromacs-462/include/gromacs
 # 3. path to gromacs/lib64 (folder where gromacs is compiled)
-GMXLIB       = /home/vgapsys/gromacs-462_clean/lib
+GMXLIB       = .../gromacs-462/lib
 # 4. path to fftw library
-FFTW         = /home/vgapsys/Downloads/fftw/compiled/lib64
+FFTW         = .../fftw/compiled/lib64
 # 5. path to fftw header files
-FFTWINCL     = /home/vgapsys/Downloads/fftw/compiled/include
+FFTWINCL     = .../fftw/compiled/include
 
 # Variables set by the configuration script:
 LIBS         = -lgmx -lm -lfftw3 -lfftw3f 
