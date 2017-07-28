@@ -2218,20 +2218,20 @@ if(mat)
 			  {
 				  filter_curve_abs(z_smooth_avg_up,filtered_up,binx,biny,bin_sizex,bin_sizey,q_filter_low,q_filter_high,curve_mat_frame_num,filter_verbose);
 				  filter_curve_abs(z_smooth_avg_down,filtered_down,binx,biny,bin_sizex,bin_sizey,q_filter_low,q_filter_high,curve_mat_frame_num,filter_verbose);
-				  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_up,gcurve_grid_up,mcurve_grid_up,1);
-				  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_down,gcurve_grid_down,mcurve_grid_down,-1);
+				  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_up,gcurve_grid_up,mcurve_grid_up,mean_curve_sign_up);
+				  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_down,gcurve_grid_down,mcurve_grid_down,mean_curve_sign_down);
 			  }
 			  else if(r_filter_low>0.0 || r_filter_high<1.0) //relative radius
 			  {
 				  filter_curve_rel(z_smooth_avg_up,filtered_up,binx,biny,bin_sizex,bin_sizey,r_filter_low,r_filter_high,curve_mat_frame_num,filter_verbose);
 				  filter_curve_rel(z_smooth_avg_down,filtered_down,binx,biny,bin_sizex,bin_sizey,r_filter_low,r_filter_high,curve_mat_frame_num,filter_verbose);
-				  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_up,gcurve_grid_up,mcurve_grid_up,1);
-				  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_down,gcurve_grid_down,mcurve_grid_down,-1);
+				  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_up,gcurve_grid_up,mcurve_grid_up,mean_curve_sign_up);
+				  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_down,gcurve_grid_down,mcurve_grid_down,mean_curve_sign_down);
 			  }
 			  else
 			  {
-				  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,curve_mat_frame_num,z_smooth_avg_up,gcurve_grid_up,mcurve_grid_up,1);
-				  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,curve_mat_frame_num,z_smooth_avg_down,gcurve_grid_down,mcurve_grid_down,-1);
+				  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,curve_mat_frame_num,z_smooth_avg_up,gcurve_grid_up,mcurve_grid_up,mean_curve_sign_up);
+				  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,curve_mat_frame_num,z_smooth_avg_down,gcurve_grid_down,mcurve_grid_down,mean_curve_sign_down);
 			  }
 
 			  for(j=biny-1; j>=0; j--) //outter loop
