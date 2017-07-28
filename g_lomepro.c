@@ -2348,7 +2348,7 @@ if(mat)
   {
 	  snew(gausCurveUp,grid_size);
 	  snew(meanCurveUp,grid_size);
-	  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,frame_num,grid_up_avg,gausCurveUp,meanCurveUp,1);
+	  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,frame_num,grid_up_avg,gausCurveUp,meanCurveUp,mean_curve_sign_up);
   }
   /*****************************************Order Parameters*******************************************/
 
