@@ -141,6 +141,11 @@ int main(int argc,char *argv[])
     "-scale_gcurve (default 1) gaussian curvature values may be small, ",
     "apply scaling when printing pdb (no scaling for matrix output)[PAR]",
 
+    "-inv_mean_curve (default FALSE) allows inverting the signs of the mean curvature.",
+    "In the original g_lomepro paper, the sign of the mean curvature was determined from a point of view of an observer looking down onto a bilayer leaflet.",
+    "This way the positive mean curvature was assigned to those surface which bent towards the bilayer center.",
+    "Setting this flag to TRUE inverts the sign: the mean curvature becomes positive when the surface bends away from the bilayer midpoint.",
+
 
     "...........................................................................[PAR]",
     "Scd Order parameter (-order):[PAR]",
@@ -237,6 +242,7 @@ int main(int argc,char *argv[])
   static real q_filter_low = 0.0;
   static real q_filter_high = 99999.99;
   static gmx_bool nonflat=FALSE;
+  static gmx_bool inv_mean_curve=FALSE;
 //  static gmx_bool rm_pbc=FALSE;
   static int normal=2;
   static gmx_bool swapxy=FALSE;
@@ -303,6 +309,8 @@ int main(int argc,char *argv[])
 						  "Gaussian curvature values may be small,"
 						  "apply scaling when printing pdb (no scaling for matrix output)"
       },
+      { "-inv_mean_curve", FALSE,  etBOOL, {&inv_mean_curve},
+               "Invert the sign of the mean curvature" },
       { "-nonflat", FALSE,  etBOOL, {&nonflat},
                "Put this flag if the membrane is highly curved" },
       { "-normal", FALSE,  etINT, {&normal},
@@ -362,6 +370,14 @@ int main(int argc,char *argv[])
   {
 	  printf("\nChoose the group of a lipid tail end atom:\n");
 	  rd_index(index_file,1,&ntail,&idtail,&nametail);
+  }
+
+  int mean_curve_sign_up = 1;
+  int mean_curve_sign_down = -1;
+  if(inv_mean_curve)
+  {
+      mean_curve_sign_up = -1;
+      mean_curve_sign_down = 1;
   }
 
   gmx_bool order = FALSE;
@@ -2307,20 +2323,20 @@ if(mat)
           {
                   filter_curve_abs(grid_up_avg,filtered_up,binx,biny,bin_sizex,bin_sizey,q_filter_low,q_filter_high,frame_num,filter_verbose);
                   filter_curve_abs(grid_down_avg,filtered_down,binx,biny,bin_sizex,bin_sizey,q_filter_low,q_filter_high,frame_num,filter_verbose);
-                  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_up,gausCurveUp,meanCurveUp,1);
-                  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_down,gausCurveDown,meanCurveDown,-1);
+                  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_up,gausCurveUp,meanCurveUp,mean_curve_sign_up);
+                  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_down,gausCurveDown,meanCurveDown,mean_curve_sign_down);
           }
 	  else if(r_filter_low>0.0 || r_filter_high<1.0) //relative radius
 	  {
 		  filter_curve_rel(grid_up_avg,filtered_up,binx,biny,bin_sizex,bin_sizey,r_filter_low,r_filter_high,frame_num,filter_verbose);
 		  filter_curve_rel(grid_down_avg,filtered_down,binx,biny,bin_sizex,bin_sizey,r_filter_low,r_filter_high,frame_num,filter_verbose);
-		  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_up,gausCurveUp,meanCurveUp,1);
-		  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_down,gausCurveDown,meanCurveDown,-1);
+		  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_up,gausCurveUp,meanCurveUp,mean_curve_sign_up);
+		  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,1,filtered_down,gausCurveDown,meanCurveDown,mean_curve_sign_down);
 	  }
 	  else
 	  {
-		  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,frame_num,grid_up_avg,gausCurveUp,meanCurveUp,1);
-		  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,frame_num,grid_down_avg,gausCurveDown,meanCurveDown,-1);
+		  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,frame_num,grid_up_avg,gausCurveUp,meanCurveUp,mean_curve_sign_up);
+		  curvature(dirx,diry,dirz,curve_step_x,curve_step_y,bin_sizex,bin_sizey,binx,biny,frame_num,grid_down_avg,gausCurveDown,meanCurveDown,mean_curve_sign_down);
 	  }
   }
   /*****************************************Curvature*******************************************/
