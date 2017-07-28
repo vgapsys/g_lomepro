@@ -143,7 +143,7 @@ int main(int argc,char *argv[])
 
     "-inv_mean_curve (default FALSE) allows inverting the signs of the mean curvature.",
     "In the original g_lomepro paper, the sign of the mean curvature was determined from a point of view of an observer looking down onto a bilayer leaflet.",
-    "This way the positive mean curvature was assigned to those surface which bent towards the bilayer center.",
+    "This way the positive mean curvature was assigned to the surface which bent towards the bilayer center.",
     "Setting this flag to TRUE inverts the sign: the mean curvature becomes positive when the surface bends away from the bilayer midpoint.",
 
 
