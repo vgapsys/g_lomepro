@@ -216,6 +216,7 @@ int main(int argc,char *argv[])
       { efOUT, "-apl", "apl",  ffOPTWR},
       { efOUT, "-curve", "curvature",  ffOPTWR},
       { efOUT, "-order", "order",  ffOPTWR},
+      { efOUT, "-dens", "density",  ffOPTWR},
       //{ efOUT, "-diffus", "diffusion",  ffOPTWR},
       { efTRX, "-mov_pdb", "mov_pdb.pdb",  ffOPTWR},
       { efOUT, "-mov_mat", "mov_mat",  ffOPTWR}
@@ -227,7 +228,13 @@ int main(int argc,char *argv[])
   const char *in_file;
   const char *index_file;
 //  const char *tpr_file;
-  static int lipid_num=0;
+//    int         lipid_numEnum;
+  static char *char_lipid_numGroup = "0";
+//  static char *char_lipid_numGroup[] = {"288"}; //{1,2};
+
+//  static char *lipid_numGroup= {1,2};
+//  snew(lipid_numGroup,2);
+  static int lipidGroup_num=1;
   static gmx_bool is_prot = FALSE;
   static int binx = 10;
   static int biny = 10;
@@ -254,8 +261,10 @@ int main(int argc,char *argv[])
   output_env_t oenv;
 
   t_pargs pa[] = {
-      { "-lip_num", FALSE, etINT, {&lipid_num},
-    		  "Number of lipids" },
+      { "-lip_num", FALSE, etSTR, {&char_lipid_numGroup},
+    		  "Number of lipids. If multiple lipid species are used (-lipGroup_num), provide a vector here" },
+      { "-lipGroup_num", FALSE, etINT, {&lipidGroup_num},
+    		  "Number of lipid species" },
       { "-breath", FALSE,  etBOOL, {&breath},
     	      "If set, the grid is modified according to the box at every step" },
      { "-prot", FALSE,  etBOOL, {&is_prot},
@@ -344,21 +353,68 @@ int main(int argc,char *argv[])
   set_pbc(&pbc,ePBC,box);
 
 
-  int nlip, nprot, ntail, norder1, norder2, nunsat1, nunsat2; //number of atoms
-  atom_id *idlip, *idprot, *idtail, *idorder1, *idorder2, *idunsat1, *idunsat2;   //IDs of the atoms
+  // ending "Group" is for the lipid species in a mixture membrane
+  int nlip,*nlipGroup, nprot, ntail,*ntailGroup, norder1, norder2, nunsat1, nunsat2; //number of atoms
+  atom_id *idlip,**idlipGroup, *idprot, *idtail,**idtailGroup, *idorder1, *idorder2, *idunsat1, *idunsat2;   //IDs of the atoms
   char *namelip, *nameprot, *nametail, *nameorder; //names of the groups
 
 
   //check if lipid_num was specified
-  if(lipid_num == 0)
+//  printf("%s\n",char_lipid_numGroup);
+  int lipid_num = 0;
+  char *tmpstring;
+  int *lipid_numGroup;
+  snew(lipid_numGroup,lipidGroup_num);
+  tmpstring = strtok(char_lipid_numGroup," ,");
+//  while (tmpstring != NULL)
+  for(i=0; i<lipidGroup_num; i++)
   {
+    lipid_numGroup[i] = atoi(tmpstring);
+    lipid_num += lipid_numGroup[i];
+    tmpstring = strtok (NULL, " ,");
+    if(lipid_numGroup[i] == 0)
+    {
 	  printf("\nMust specify the number of lipids: -lip_num \n");
 	  return(0);
+    }
   }
 
   //deal with index files
-  printf("\nChoose the lipid group\n");
-  rd_index(index_file,1,&nlip,&idlip,&namelip);
+  /////// these indeces are capable of dealing with multi-Groups ///////
+  nlip = 0;
+  snew(nlipGroup,lipidGroup_num); 
+  snew(idlipGroup,lipidGroup_num); 
+  for(i=0; i<lipidGroup_num; i++)
+  {
+      printf("\nChoose the lipid group\n");
+      rd_index(index_file,1,&nlipGroup[i],&idlipGroup[i],&namelip);
+      nlip += nlipGroup[i];
+  }
+  snew(idlip,nlip);
+  int counter=0;
+  for(i=0; i<lipidGroup_num; i++)
+  {
+      for(j=0; j<nlipGroup[i]; j++)
+      {
+          idlip[counter] = idlipGroup[i][j];
+          counter++;
+      }
+  }
+  /////////////////////////////////////////////////////////////////////////
+  // nlip: total number of lipid atoms
+  // lipidGroup_num: number of lipid groups (species)
+  // nlipGroup[lipidGroup_num]: number of lipid atoms for every lipid species
+  // idlipGroup[lipidGroup_num][nlipGroup]: IDs of lipid atoms for every species
+  // idlip[nlip]: total IDs of lipid atoms
+  // lipid_numGroup[lipidGroup_num]: number of lipids in every species
+  // lipid_num: total number of lipids
+  // ------
+  // ntail: total number of lipid tail atoms
+  // ntailGroup[lipidGroup_num]: number of lipid tail end atoms in every lipid group
+  // idtail:
+  // idtailGroup[lipidGroup_num]: lipid tail atom IDs in every group
+  /////////////////////////////////////////////////////////////////////////
+
 
   if(is_prot)
   {
@@ -368,8 +424,27 @@ int main(int argc,char *argv[])
 
   if(nonflat)
   {
+      snew(ntailGroup,lipidGroup_num); 
+      snew(idtailGroup,lipidGroup_num); 
+      ntail = 0;
+      for(i=0; i<lipidGroup_num; i++)
+      {
 	  printf("\nChoose the group of a lipid tail end atom:\n");
-	  rd_index(index_file,1,&ntail,&idtail,&nametail);
+	  rd_index(index_file,1,&ntailGroup[i],&idtailGroup[i],&nametail);
+          ntail += ntailGroup[i];
+      }
+      snew(idtail,ntail);
+      int counter=0;
+      for(i=0; i<lipidGroup_num; i++)
+      {
+          for(j=0; j<ntailGroup[i]; j++)
+          {
+              idtail[counter] = idtailGroup[i][j];
+              counter++;
+          }
+      }
+//	  printf("\nChoose the group of a lipid tail end atom:\n");
+//	  rd_index(index_file,1,&ntail,&idtail,&nametail);
   }
 
   int mean_curve_sign_up = 1;
@@ -380,9 +455,9 @@ int main(int argc,char *argv[])
       mean_curve_sign_down = 1;
   }
 
-  gmx_bool order = FALSE;
-  order = opt2bSet("-order",NFILE,fnm);
-  if(order)
+  gmx_bool bOrder = FALSE;
+  bOrder = opt2bSet("-order",NFILE,fnm);
+  if(bOrder)
   {
 	  printf("\nChoose the group of atoms in sn-1 acyl chain for order parameter calculation:\n");
 	  rd_index(index_file,1,&norder1,&idorder1,&nameorder);
@@ -420,8 +495,8 @@ int main(int argc,char *argv[])
   char *thick_name_mov_pdb, *thick_name_mov_mat;
   FILE *fp_mov_pdb_thick, *fp_mov_mat_thick;
 
-  gmx_bool thick = opt2bSet("-thick",NFILE,fnm);
-  if(thick)
+  gmx_bool bThick = opt2bSet("-thick",NFILE,fnm);
+  if(bThick)
   {
 	  const char *foo_name = opt2fn("-thick",NFILE,fnm);
 
@@ -472,6 +547,72 @@ int main(int argc,char *argv[])
   /*------------ THICKNESS -------------------*/
   /*------------ THICKNESS -------------------*/
 
+  
+  /*------------ DENSITY -------------------*/
+  /*------------ DENSITY -------------------*/
+  char *dens_name_avg_dat, *dens_name_sd_dat, *dens_name_avg_pdb, *dens_name_sd_pdb;
+  FILE **dens_up_fp_avg_dat, **dens_down_fp_avg_dat, **dens_up_fp_sd_dat, **dens_down_fp_sd_dat, **dens_fp_avg_pdb, **dens_fp_sd_pdb;
+  char *dens_name_mov_pdb, *dens_name_mov_mat;
+  FILE **fp_mov_mat_dens_up, **fp_mov_mat_dens_down;
+
+  gmx_bool bDens = opt2bSet("-dens",NFILE,fnm);
+  if(bDens)
+  {
+	  const char *foo_name = opt2fn("-dens",NFILE,fnm);
+
+      snew(dens_up_fp_avg_dat,lipidGroup_num);
+      snew(dens_down_fp_avg_dat,lipidGroup_num);
+      snew(dens_up_fp_sd_dat,lipidGroup_num);
+      snew(dens_down_fp_sd_dat,lipidGroup_num);
+      snew(dens_fp_avg_pdb,lipidGroup_num);
+      snew(dens_fp_sd_pdb,lipidGroup_num);
+
+      for(i=0; i<lipidGroup_num; i++)
+      {
+          snew(dens_name_avg_dat,strlen(foo_name)+20);
+          snprintf(dens_name_avg_dat,1000,"%s_up_lip%d_avg.dat",foo_name,i+1);
+	  dens_up_fp_avg_dat[i] = fopen(dens_name_avg_dat,"w");
+          sfree(dens_name_avg_dat);
+          snew(dens_name_avg_dat,strlen(foo_name)+20);
+          snprintf(dens_name_avg_dat,1000,"%s_down_lip%d_avg.dat",foo_name,i+1);
+	  dens_down_fp_avg_dat[i] = fopen(dens_name_avg_dat,"w");
+
+          snew(dens_name_sd_dat,strlen(foo_name)+20);
+          snprintf(dens_name_sd_dat,1000,"%s_up_lip%d_sd.dat",foo_name,i+1);
+	  dens_up_fp_sd_dat[i] = fopen(dens_name_sd_dat,"w");
+          sfree(dens_name_sd_dat);
+          snew(dens_name_sd_dat,strlen(foo_name)+20);
+          snprintf(dens_name_sd_dat,1000,"%s_down_lip%d_sd.dat",foo_name,i+1);
+	  dens_down_fp_sd_dat[i] = fopen(dens_name_sd_dat,"w");
+
+          snew(dens_name_avg_pdb,strlen(foo_name)+20);
+          snprintf(dens_name_avg_pdb,1000,"%s_lip%d_avg.pdb",foo_name,i+1);
+	  dens_fp_avg_pdb[i] = fopen(dens_name_avg_pdb,"w");
+
+          snew(dens_name_sd_pdb,strlen(foo_name)+20);
+          snprintf(dens_name_sd_pdb,1000,"%s_lip%d_sd.pdb",foo_name,i+1);
+	  dens_fp_sd_pdb[i] = fopen(dens_name_sd_pdb,"w");
+      }
+
+	  if(mat)
+	  {
+		  foo_name = opt2fn("-mov_mat",NFILE,fnm);
+                  snew(fp_mov_mat_dens_up,lipidGroup_num); 
+                  for(i=0; i<lipidGroup_num; i++)  
+                  {
+                      snew(dens_name_mov_mat,strlen(foo_name)+20);       
+                      snprintf(dens_name_mov_mat,1000,"%s_up_lip%d_dens.dat",foo_name,i+1);   
+                      fp_mov_mat_dens_up[i] = fopen(dens_name_mov_mat,"w");          
+                      sfree(dens_name_mov_mat);
+                      snew(dens_name_mov_mat,strlen(foo_name)+20);       
+                      snprintf(dens_name_mov_mat,1000,"%s_down_lip%d_dens.dat",foo_name,i+1);   
+                      fp_mov_mat_dens_down[i] = fopen(dens_name_mov_mat,"w");          
+                  }
+	  }
+  }
+  /*------------ DENSITY -------------------*/
+  /*------------ DENSITY -------------------*/
+
 
   /*------------- APL ---------------*/
   /*------------- APL ---------------*/
@@ -482,26 +623,38 @@ int main(int argc,char *argv[])
   char *apl_up_name_mov_mat, *apl_down_name_mov_mat;
   FILE *fp_mov_mat_apl_up, *fp_mov_mat_apl_down;
 
-  //for lipid index and apl of each
+  //for lipid index and apl of eac
+  // below (commented) is a prototype for APL considering lipid mixtures
+  //FILE **apl_fp_lipids_up, **apl_fp_lipids_down, **apl_fp_over_time;
   char *apl_name_lipids_up, *apl_name_lipids_down, *apl_name_over_time;
   FILE *apl_fp_lipids_up, *apl_fp_lipids_down, *apl_fp_over_time;
 
-
-  gmx_bool apl = opt2bSet("-apl",NFILE,fnm);
-  if(apl)
+  gmx_bool bApl = opt2bSet("-apl",NFILE,fnm);
+  if(bApl)
   {
 	  const char *foo_name =	opt2fn("-apl",NFILE,fnm);
 
+    for(i=0; i<lipidGroup_num; i++)
+    {
 	  //first deal with lipid index files
-	  snew(apl_name_lipids_up,strlen(foo_name)+20);
-	  strcpy(apl_name_lipids_up,foo_name);
-	  strcat(apl_name_lipids_up,"_up_lipids.dat");
+	  // below (commented) is a prototype for APL considering lipid mixtures
+/*	  snew(apl_name_lipids_up,strlen(foo_name)+20);
+          snprintf(apl_name_lipids_up,1000,"%s_lip%d_up_lipids.dat",foo_name,i+1);
 	  snew(apl_name_lipids_down,strlen(foo_name)+20);
 	  strcpy(apl_name_lipids_down,foo_name);
-	  strcat(apl_name_lipids_down,"_down_lipids.dat");
+          snprintf(apl_name_lipids_down,1000,"%s_lip%d_down_lipids.dat",foo_name,i+1);
 	  snew(apl_name_over_time,strlen(foo_name)+20);
 	  strcpy(apl_name_over_time,foo_name);
-	  strcat(apl_name_over_time,"_over_time.dat");
+          snprintf(apl_name_over_time,1000,"%s_lip%d_over_time.dat",foo_name,i+1);*/
+          snew(apl_name_lipids_up,strlen(foo_name)+20);
+          strcpy(apl_name_lipids_up,foo_name);
+          strcat(apl_name_lipids_up,"_up_lipids.dat");
+          snew(apl_name_lipids_down,strlen(foo_name)+20);
+          strcpy(apl_name_lipids_down,foo_name);
+          strcat(apl_name_lipids_down,"_down_lipids.dat");
+          snew(apl_name_over_time,strlen(foo_name)+20);
+          strcpy(apl_name_over_time,foo_name);
+          strcat(apl_name_over_time,"_over_time.dat");
 
 	  //then the others
 	  snew(apl_up_name_avg_dat,strlen(foo_name)+20);
@@ -552,10 +705,10 @@ int main(int argc,char *argv[])
 		  strcat(apl_down_name_mov_mat,"_down_apl.dat");
 		  fp_mov_mat_apl_down=ffopen(apl_down_name_mov_mat,"w");
 	  }
+    }
   }
   /*------------- APL ---------------*/
   /*------------- APL ---------------*/
-
 
 
   /*------------- CURVATURE ---------------*/
@@ -569,8 +722,8 @@ int main(int argc,char *argv[])
   FILE *fp_mov_mat_mcurve_up, *fp_mov_mat_mcurve_down;
   FILE *fp_mov_mat_gcurve_up, *fp_mov_mat_gcurve_down;
 
-  gmx_bool curve= opt2bSet("-curve",NFILE,fnm);
-  if(curve)
+  gmx_bool bCurve= opt2bSet("-curve",NFILE,fnm);
+  if(bCurve)
   {
 	  const char *foo_name = opt2fn("-curve",NFILE,fnm);
 
@@ -671,7 +824,7 @@ int main(int argc,char *argv[])
   FILE **fp_mov_mat_order_up1, **fp_mov_mat_order_up2;
   FILE **fp_mov_mat_order_down1, **fp_mov_mat_order_down2;
 
-  if(order)
+  if(bOrder)
   {
   	  order_atom_num1 = norder1/lipid_num;
   	  order_atom_num2 = norder2/lipid_num;
@@ -896,7 +1049,14 @@ int main(int argc,char *argv[])
   if (!read_first_frame(oenv, &trxhandle,in_file,&frame,TRX_READ_X || TRX_READ_V || TRX_READ_F))
 	gmx_fatal(FARGS,"Could not read first frame from trajectory %s",in_file);
 
-  int nlip_group = nlip/lipid_num; //number of atoms in one lipid group
+//  int nlip_group = nlip/lipid_num; //number of atoms in one lipid group
+  int *nlip_groupGroup; // number of atoms in one lipid group for every species
+  snew(nlip_groupGroup,lipidGroup_num);
+  for(i=0; i<lipidGroup_num; i++)
+  { 
+	nlip_groupGroup[i] = nlipGroup[i]/lipid_numGroup[i]; 
+  }
+
 
 
   int grid_size = binx*biny;
@@ -923,7 +1083,7 @@ int main(int argc,char *argv[])
   real **z_smooth_frames_down;
   real *z_smooth_avg_up; //z-coord averaged over the last #smooth frames
   real *z_smooth_avg_down;
-  if(thick)
+  if(bThick)
   {
 	  snew(grid,grid_size);
 	  snew(grid_sd,grid_size);
@@ -938,7 +1098,7 @@ int main(int argc,char *argv[])
 		  }
 	  }
   }
-  if( pdb || (curve && mat) )
+  if( pdb || (bCurve && mat) )
   {
 	  snew(z_smooth_avg_up,grid_size);
 	  snew(z_smooth_avg_down,grid_size);
@@ -953,6 +1113,52 @@ int main(int argc,char *argv[])
   /*****************THICKNESS***********/
 
 
+
+  /*****************DENSITY***********/
+  int ii=0;
+  real ***dens_grid_up=NULL;
+  real ***dens_grid_down=NULL;
+//  real **apl_lip_up=NULL;
+//  real **apl_lip_down=NULL;
+//  real **apl_smooth_up_frames; //saves the last grids of the last #smooth frames
+//  real **apl_smooth_down_frames; //saves the last grids of the last #smooth frames
+//  real *apl_smooth_up_avg; //grid averaged over the last #smooth frames
+//  real *apl_smooth_down_avg; //grid averaged over the last #smooth frames
+//  real *apl_smooth_down_avg_Xinv;
+
+  real **mat_low_dens_avg, **mat_low_dens_sd; // needed for output only
+
+  //////////////////////////////////////
+  // dens_grid_up[lipidGroup_num][grid_size][0,1]
+  // dens_grid_down[lipidGroup_num][grid_size][0,1]
+
+  if(bDens)
+  {
+        snew(dens_grid_up,lipidGroup_num);
+        snew(dens_grid_down,lipidGroup_num);
+
+        snew(mat_low_dens_avg,lipidGroup_num);
+        snew(mat_low_dens_sd,lipidGroup_num);
+
+        for(ii=0; ii<lipidGroup_num; ii++)
+        {
+            snew(dens_grid_up[ii],grid_size);
+            snew(dens_grid_down[ii],grid_size);
+
+            snew(mat_low_dens_avg[ii],grid_size);
+            snew(mat_low_dens_sd[ii],grid_size);
+
+            for(i=0; i<grid_size; i++)
+            {
+                snew(dens_grid_up[ii][i],2);
+                snew(dens_grid_down[ii][i],2);
+            }
+        }
+  }
+  /***************DENSITY***********/
+
+
+
   /*****************APL***********/
   real **apl_grid_up=NULL;
   real **apl_grid_down=NULL;
@@ -964,7 +1170,13 @@ int main(int argc,char *argv[])
   real *apl_smooth_down_avg; //grid averaged over the last #smooth frames
   real *apl_smooth_down_avg_Xinv;
 
-  if(apl)
+  ///////////////////////////
+  // apl_lip_up[lipid_num][0,1,2,3]: 0-idlip; 1-sum_of_apl; 2-avg_of_apl; 3-avg_of_apl^2;
+  // apl_lip_down[lipid_num][0,1,2,3]: 0-idlip; 1-sum_of_apl; 2-avg_of_apl; 3-avg_of_apl^2;
+  // apl_grid_up[grid_size][0,1,2]: 0-lipidID for each cell; 1-apl; 2-apl^2;
+  // apl_grid_down[grid_size][0,1,2]: 0-lipidID for each cell; 1-apl; 2-apl^2;
+
+  if(bApl || bDens)
   {
 	  snew(apl_grid_up,grid_size);
 	  snew(apl_grid_down,grid_size);
@@ -1062,7 +1274,7 @@ int main(int argc,char *argv[])
   real **order_smooth_down1_Xinv;
   real **order_smooth_down2_Xinv;
 
-  if(order)
+  if(bOrder)
   {
 //	  snew(x_rm_pbc,top.atoms.nr);
 
@@ -1192,7 +1404,7 @@ int main(int argc,char *argv[])
   gmx_bool filter_verbose = TRUE;
   int curve_mat_frame_num = 10; //a constant
 
-  if(curve)
+  if(bCurve)
   {
 	  snew(mcurve_grid_up,grid_size);
 	  snew(mcurve_grid_down,grid_size);
@@ -1290,16 +1502,16 @@ int main(int argc,char *argv[])
 
 			  if(frame_num >= smooth-1)
 			  {
-				  if(thick)
+				  if(bThick)
 				  {
 					  fprintf(fp_mov_mat_thick,"FRAME %d\n",frame_num);
 				  }
-				  if(apl)
+				  if(bApl)
 				  {
 					  fprintf(fp_mov_mat_apl_up,"FRAME %d\n",frame_num);
 					  fprintf(fp_mov_mat_apl_down,"FRAME %d\n",frame_num);
 				  }
-				  if(order)
+				  if(bOrder)
 				  {
 					  for(i=2; i<order_atom_num1; i++)
 					  {
@@ -1312,7 +1524,7 @@ int main(int argc,char *argv[])
 						  fprintf(fp_mov_mat_order_down2[i-2],"FRAME %d\n",frame_num);
 					  }
 				  }
-				  if(curve)
+				  if(bCurve)
 				  {
 					  fprintf(fp_mov_mat_mcurve_up,"FRAME %d\n",frame_num);
 					  fprintf(fp_mov_mat_mcurve_down,"FRAME %d\n",frame_num);
@@ -1326,7 +1538,7 @@ int main(int argc,char *argv[])
 
 	  /**************====0000000000====******************************/
 	  //calculate order parameters
-	  if(order)
+	  if(bOrder)
 	  {
 		  // be aware that broken molecules will not be made whole
 		  // process them prior starting the analysis
@@ -1339,14 +1551,18 @@ int main(int argc,char *argv[])
 
 	  /**************====1111111111====******************************/
 	  //go over the lipids for the first time: get COMs and z_mid
-	  int i=0, mod=0, lip_count=-1;
+	  int i=0, j=0, mod=0, lip_count=-1;
 	  real total_mass=0.0;
-	  for(i=0; i<nlip; i++)
-	  {
-		  mod = i % nlip_group;
+          for(j=0; j<lipidGroup_num; j++)
+          {
+//printf("\nVG: %d %d %d\n", j,lipidGroup_num,nlipGroup[i]);
+             for(i=0; i<nlipGroup[j]; i++)
+             {
+                  mod = i % nlip_groupGroup[j];
+
 		  if(mod == 0)
 		  {
-			  if(i>0)
+			  if(lip_count>-1)
 			  {
 				  lipidCOM[lip_count][dirx] /= total_mass;
 				  lipidCOM[lip_count][diry] /= total_mass;
@@ -1362,22 +1578,22 @@ int main(int argc,char *argv[])
 				  }
 				  if(breath)
 				  {
-                      if(lipidCOM[lip_count][dirx]<left_x)
-                      {
-                              left_x = lipidCOM[lip_count][dirx];
-                      }
-                      if(lipidCOM[lip_count][diry]<left_y)
-                      {
-                              left_y = lipidCOM[lip_count][diry];
-                      }
-                      if(lipidCOM[lip_count][dirx]>right_x)
-                      {
-                              right_x = lipidCOM[lip_count][dirx];
-                      }
-                      if(lipidCOM[lip_count][diry]>right_y)
-                      {
-                              right_y = lipidCOM[lip_count][diry];
-                      }
+		                      if(lipidCOM[lip_count][dirx]<left_x)
+		                      {
+		                              left_x = lipidCOM[lip_count][dirx];
+		                      }
+		                      if(lipidCOM[lip_count][diry]<left_y)
+		                      {
+		                              left_y = lipidCOM[lip_count][diry];
+		                      }
+		                      if(lipidCOM[lip_count][dirx]>right_x)
+		                      {
+		                              right_x = lipidCOM[lip_count][dirx];
+		                      }
+		                      if(lipidCOM[lip_count][diry]>right_y)
+		                      {
+		                              right_y = lipidCOM[lip_count][diry];
+		                      }
 				  }
 			  }
 			  lip_count++;
@@ -1390,6 +1606,7 @@ int main(int argc,char *argv[])
 		  lipidCOM[lip_count][diry] += top.atoms.atom[idlip[i]].m * frame.x[idlip[i]][diry];
 		  lipidCOM[lip_count][dirz] += top.atoms.atom[idlip[i]].m * frame.x[idlip[i]][dirz];
 		  total_mass += top.atoms.atom[idlip[i]].m;
+             }
 	  }
 	  lipidCOM[lip_count][dirx] /= total_mass;
 	  lipidCOM[lip_count][diry] /= total_mass;
@@ -1519,7 +1736,7 @@ int main(int argc,char *argv[])
 		  protein_atoms(nprot,z_mid,frame.x,lipidCOM,dirx,diry,dirz,idprot,nliptop,nlipbot,
 				  pbc,pr2,top_ind,bot_ind,ptop_ind,pbot_ind,&nprot_top,&nprot_bot);
 
-		  if(order)
+		  if(bOrder)
 		  {
 #pragma omp parallel num_threads(nt)
 { //starting parallel
@@ -1612,7 +1829,7 @@ int main(int argc,char *argv[])
 					  height2 = z_mid;
 				  }
 
-			  if(thick) //thickness
+			  if(bThick) //thickness
 			  {
 				  if(mat || pdb)
 				  {
@@ -1627,7 +1844,7 @@ int main(int argc,char *argv[])
 					  }
 					  grid_smooth_frames[counter_smooth-1][aux_ind] = grid_thick[aux_ind];
 				  }
-				  if( pdb || (curve && mat) )
+				  if( pdb || (bCurve && mat) )
 				  {
 					  //deal with smoothening
 					  //independent of normal
@@ -1718,7 +1935,7 @@ int main(int argc,char *argv[])
 			  }
 			  else //no thickness
 			  {
-				  if( pdb || (curve && mat) )
+				  if( pdb || (bCurve && mat) )
 				  {
 					  //deal with smoothening
 					  //independent of normal
@@ -1803,8 +2020,8 @@ int main(int argc,char *argv[])
 /************************************ THICKNESS *******************************************/
 
 
-/*****************************************APL*******************************************/
-			  if(apl)
+/*****************************************APL or DENSITY*******************************************/
+			  if(bApl || bDens)
 			  {
 				  time_saver_up=0;
 				  time_saver_down=0;
@@ -1869,13 +2086,13 @@ int main(int argc,char *argv[])
 					  }
 				  }
 			  }
-/*****************************************APL*******************************************/
+/*****************************************APL or DENSITY*******************************************/
 
 		  } //??????????? END OF THE INNER GRID ELEMENT LOOP ???????????//
 
 		  if(mat)
 		  {
-			  if(thick && (frame_num >= smooth-1))
+			  if(bThick && (frame_num >= smooth-1))
 			  {
 				  fprintf(fp_mov_mat_thick,"\n");
 			  }
@@ -1886,7 +2103,7 @@ int main(int argc,char *argv[])
 
 
 /************************************ ORDER PARAM ****************************************/
-if(order)
+if(bOrder)
 {
 #pragma omp parallel num_threads(nt)
 { //starting parallel
@@ -2025,7 +2242,7 @@ if(mat)
 
 
 /************************************ APL SECOND GO *******************************************/
-	  if(apl)
+	  if(bApl || bDens)
 	  {
 		  for(j=biny-1; j>=0; j--)
 		  {
@@ -2091,7 +2308,7 @@ if(mat)
 					  }
 				  }
 
-				  if(mat)
+				  if(bApl && mat)
 				  {
 					  //the trick here is that apl_grid_[up|down] is already an average
 					  if(frame_num < smooth) //first frames
@@ -2117,7 +2334,7 @@ if(mat)
 				  }
 			  } //???? end of inner grid loop for APL ????//
 
-			  if(mat)
+			  if(bApl && mat)
 			  {
 				  if(frame_num >= smooth-1)
 				  {
@@ -2151,7 +2368,9 @@ if(mat)
 
 
 		  //output apl per lipid over time
-		  fprintf(apl_fp_over_time,"FRAME %d\n",frame_num);
+                  if(bApl)
+                  { fprintf(apl_fp_over_time,"FRAME %d\n",frame_num); }
+
 		  real foo=0.0, bar=0.0;
 		  int typecast_id=0;
 		  for(k=0;k<number;k++)
@@ -2161,18 +2380,20 @@ if(mat)
 			  if(typecast_id == -1) //for protein
 			  {
 				  foo = apl_lip_up[k][1];
-				  fprintf(apl_fp_over_time,"%f  protein_up      %f\n",frame.time,foo);
+                                  if(bApl)
+                                  { fprintf(apl_fp_over_time,"%f  protein_up      %f\n",frame.time,foo); }
 				  apl_lip_up[k][1] = 0.0;
 			  }
 			  else //for lipids
 			  {
-				  foo = apl_lip_up[k][1];
+		              foo = apl_lip_up[k][1];
 		  	      apl_lip_up[k][1]=0.0;
 			      if(foo != 0.0)
 			      {
 				      bar += foo/number;
 				      //time index apl
-		  		      fprintf(apl_fp_over_time,"%f	%d      %f\n",frame.time,typecast_id,foo);
+                                      if(bApl)
+		  		      { fprintf(apl_fp_over_time,"%f	%d      %f\n",frame.time,typecast_id,foo); }
 			      }
 			  }
 
@@ -2180,32 +2401,73 @@ if(mat)
 			  typecast_id = (int) apl_lip_down[k][0];
 			  if(typecast_id == -1) //for protein
 			  {
-                  foo = apl_lip_down[k][1];
-                  fprintf(apl_fp_over_time,"%f  protein_down      %f\n",frame.time,foo);
-                  apl_lip_down[k][1] = 0.0;
+                              foo = apl_lip_down[k][1];
+                              if(bApl)
+                              { fprintf(apl_fp_over_time,"%f  protein_down      %f\n",frame.time,foo); }
+                              apl_lip_down[k][1] = 0.0;
 			  }
 			  else //for lipids
 			  {
-				  foo = apl_lip_down[k][1];
+                              foo = apl_lip_down[k][1];
 		  	      apl_lip_down[k][1]=0.0;
 			      if(foo != 0.0)
 			      {
 				      bar += foo/number;
 				      //time index apl
-		  		      fprintf(apl_fp_over_time,"%f	%d      %f\n",frame.time,typecast_id,foo);
+                                      if(bApl)
+		  		      { fprintf(apl_fp_over_time,"%f	%d      %f\n",frame.time,typecast_id,foo); }
 			      }
 
 			  }
 		  }
-		  fprintf(apl_fp_over_time,"%f	MEAN	%f\n",frame.time,bar);
+                  if(bApl)
+		  { fprintf(apl_fp_over_time,"%f	MEAN	%f\n",frame.time,bar); }
 
 	  }
 	  /************************************ APL SECOND GO *******************************************/
 
 
+	  /************************************ DENSITY *******************************************/
+          if(bDens)
+          {
+              for(j=biny-1; j>=0; j--)
+	      {
+	          for(i=0; i<binx; i++)
+		  {
+		      time_saver_up=0;
+		      time_saver_down=0;
+		      aux_ind = get_ind(i,j,binx);
+//printf("%d\n",(int)apl_grid_up[aux_ind][0]);
+
+                      assign_density(dens_grid_up,apl_grid_up,lipidGroup_num,nlipGroup,idlipGroup,aux_ind);
+                      assign_density(dens_grid_down,apl_grid_down,lipidGroup_num,nlipGroup,idlipGroup,aux_ind);
+//                      printf("\n%d %f\n", aux_ind,dens_grid_up[0][aux_ind][0]);
+
+/*                      for(ii=0; ii<lipidGroup_num; ii++) // for every lipid species fill the grid
+                      {
+                          for(k=0; k<nlipGroup[ii]; k++)
+                          {
+                              dens_grid_upi
+                              printf("%d\n", idlipGroup[ii][k]);
+                          }*/
+//exit(0);
+
+
+/*		      if(is_prot)
+		      {
+	              }
+                      else
+                      {
+                      }*/
+
+                      }
+                  }
+          }
+	  /************************************ DENSITY *******************************************/
+
 
 	  /***************************************** CURVATURE *******************************************/
-	  if( curve && mat ) //only for movie, otherwise curvature is calculated from the averaged thickness
+	  if( bCurve && mat ) //only for movie, otherwise curvature is calculated from the averaged thickness
 	  {
 		  //z_smooth_avg_[up|down] is in Angstroms already (for pdb output) and already divided by smooth
 		  //inside of filtering.c z_smooth_avg_[up|down] is divided by the curve_mat_frame_num
@@ -2309,7 +2571,7 @@ if(mat)
   real *meanCurveUp = NULL;
   real *meanCurveDown = NULL;
 
-  if(curve)
+  if(bCurve)
   {
 	  snew(gausCurveUp,grid_size);
 	  snew(meanCurveUp,grid_size);
@@ -2344,7 +2606,7 @@ if(mat)
 
 
   /*****************************************Order Parameters*******************************************/
-  if(curve==-1)
+  if(bCurve==-1)
   {
 	  snew(gausCurveUp,grid_size);
 	  snew(meanCurveUp,grid_size);
@@ -2362,14 +2624,14 @@ if(mat)
   //snew()
 
   /******* THICKNESS *****/
-  if(thick)
+  if(bThick)
   {
 	  fprintf(thick_fp_avg_pdb,"TITLE     Thickness\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
 	  fprintf(thick_fp_sd_pdb,"TITLE     Thickness\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
   }
 
   /********** APL ********/
-  if(apl)
+  if(bApl)
   {
 	  fprintf(apl_fp_avg_pdb,"TITLE     Area per lipid\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
 	  fprintf(apl_fp_sd_pdb,"TITLE     Area per lipid\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
@@ -2377,8 +2639,18 @@ if(mat)
 	  snew(mat_low_apl_sd,binx);
   }
 
+  /********** DENSITY ********/
+  if(bDens)
+  {
+      for(i=0; i<lipidGroup_num; i++)
+      {
+          fprintf(dens_fp_avg_pdb[i],"TITLE     Area per lipid\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
+	  fprintf(dens_fp_sd_pdb[i],"TITLE     Area per lipid\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
+      }
+  }
+
   /********** ORDER ********/
-  if(order)
+  if(bOrder)
   {
   	  snew(mat_low_order1,order_atom_num1-2);
   	  snew(mat_low_order2,order_atom_num2-2);
@@ -2397,7 +2669,7 @@ if(mat)
   }
 
   /********** CURVATURE ********/
-  if(curve)
+  if(bCurve)
   {
 	  fprintf(gcurve_fp_avg_pdb,"TITLE     Gaussian curvature\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
 	  fprintf(mcurve_fp_avg_pdb,"TITLE     Mean curvature\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
@@ -2421,7 +2693,7 @@ if(mat)
 		  first_bin++;
 
 		  /**************************************THICKNESS**********************************/
-		  if(thick)
+		  if(bThick)
 		  {
 			  grid[aux_ind] /= frame_num;
 			  if(frame_num>1)
@@ -2505,7 +2777,7 @@ if(mat)
 
 
 		  /*****************************************APL*************************************/
-		  if(apl)
+		  if(bApl)
 		  {
 			  apl_val_up = apl_grid_up[aux_ind][1]/frame_num;
 			  apl_val_down = apl_grid_down[aux_ind][1]/frame_num;
@@ -2542,54 +2814,8 @@ if(mat)
 					  apl_sd_down = 0.0;
 				  }
 
-			  if(normal==0)
-			  {
-				  mov_pdb_x1 = 10*grid_up_avg[aux_ind];
-				  mov_pdb_x2 = 10*grid_down_avg[aux_ind];
-				  mov_pdb_y1 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_y2 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_z1 = 10*left_y+10*j*bin_sizey;
-				  mov_pdb_z2 = 10*left_y+10*j*bin_sizey;
-				  if(swapxy)
-				  {
-					  mov_pdb_y1 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_y2 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_z1 = 10*left_x+10*i*bin_sizex;
-					  mov_pdb_z2 = 10*left_x+10*i*bin_sizex;
-				  }
-			  }
-			  if(normal==1)
-			  {
-				  mov_pdb_x1 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_x2 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_y1 = 10*grid_up_avg[aux_ind];
-				  mov_pdb_y2 = 10*grid_down_avg[aux_ind];
-				  mov_pdb_z1 = 10*left_y+10*j*bin_sizey;
-				  mov_pdb_z2 = 10*left_y+10*j*bin_sizey;
-				  if(swapxy)
-				  {
-					  mov_pdb_x1 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_x2 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_z1 = 10*left_x+10*i*bin_sizex;
-					  mov_pdb_z2 = 10*left_x+10*i*bin_sizex;
-				  }
-			  }
-			  if(normal==2)
-			  {
-				  mov_pdb_x1 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_x2 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_y1 = 10*left_y+10*j*bin_sizey;
-				  mov_pdb_y2 = 10*left_y+10*j*bin_sizey;
-				  mov_pdb_z1 = 10*grid_up_avg[aux_ind];
-				  mov_pdb_z2 = 10*grid_down_avg[aux_ind];
-				  if(swapxy)
-				  {
-					  mov_pdb_x1 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_x2 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_y1 = 10*left_x+10*i*bin_sizex;
-					  mov_pdb_y2 = 10*left_x+10*i*bin_sizex;
-				  }
-			  }
+                          get_xyz_for_pdb( &mov_pdb_x1, &mov_pdb_y1, &mov_pdb_z1, left_x, left_y, bin_sizex, bin_sizey, normal, swapxy, grid_up_avg[aux_ind], i, j);
+                          get_xyz_for_pdb( &mov_pdb_x2,&mov_pdb_y2,&mov_pdb_z2, left_x, left_y, bin_sizex, bin_sizey, normal, swapxy, grid_down_avg[aux_ind], i, j);
 
 			  fprintf(apl_fp_avg_pdb,pdbform,"ATOM",(aux_ind+1)%100000,"C","XXX",chA,1, mov_pdb_x1, mov_pdb_y1, mov_pdb_z1, 1.0,apl_val_up);
 			  fprintf(apl_fp_avg_pdb,pdbform,"ATOM",(aux_ind+1)%100000,"C","XXX",chB,1, mov_pdb_x2, mov_pdb_y2, mov_pdb_z2,1.0,apl_val_down);
@@ -2601,11 +2827,67 @@ if(mat)
 			  mat_low_apl_avg[binx-1-i] = apl_val_down;
 			  mat_low_apl_sd[binx-1-i] = apl_sd_down;
 		  }
+//printf("%d %d; %d %d; %d; %f\n", j, biny, i, binx, aux_ind, grid_down_avg[aux_ind]);
 		  /*****************************************APL*******************************************/
 
 
+		  /*****************************************DENSITY*************************************/
+		  if(bDens)
+		  {
+                      // re-use apl_val_up, apl_val_down, apl_sd_up, apl_sd_down variable names
+                      for(ii=0; ii<lipidGroup_num; ii++)
+                      {
+			  apl_val_up = dens_grid_up[ii][aux_ind][0]/frame_num;
+			  apl_val_down = dens_grid_down[ii][aux_ind][0]/frame_num;
+			  if(frame_num>1)
+			  {
+				  apl_sd_up = dens_grid_up[ii][aux_ind][2]/(frame_num-1)-pow(apl_val_up,2)*frame_num/(frame_num-1);
+				  apl_sd_down = dens_grid_down[ii][aux_ind][2]/(frame_num-1)-pow(apl_val_down,2)*frame_num/(frame_num-1);
+
+				  if(apl_sd_up<0.0) //could happen at numerical precision
+				  {
+					  apl_sd_up = 0.0;
+				  }
+				  else
+				  {
+					  apl_sd_up = sqrt(apl_sd_up);
+				  }
+
+				  if(apl_sd_down<0.0) //could happen at numerical precision
+				  {
+					  apl_sd_down = 0.0;
+				  }
+				  else
+				  {
+					  apl_sd_down = sqrt(apl_sd_down);
+				  }
+			  }
+			  else
+				  if(frame_num==1)
+				  {
+					  apl_sd_up = 0.0;
+					  apl_sd_down = 0.0;
+				  }
+
+                          get_xyz_for_pdb( &mov_pdb_x1, &mov_pdb_y1, &mov_pdb_z1, left_x, left_y, bin_sizex, bin_sizey, normal, swapxy, grid_up_avg[aux_ind], i, j);
+                          get_xyz_for_pdb( &mov_pdb_x2,&mov_pdb_y2,&mov_pdb_z2, left_x, left_y, bin_sizex, bin_sizey, normal, swapxy, grid_down_avg[aux_ind], i, j);
+
+			  fprintf(dens_fp_avg_pdb[ii],pdbform,"ATOM",(aux_ind+1)%100000,"C","XXX",chA,1, mov_pdb_x1, mov_pdb_y1, mov_pdb_z1, 1.0,apl_val_up);
+			  fprintf(dens_fp_avg_pdb[ii],pdbform,"ATOM",(aux_ind+1)%100000,"C","XXX",chB,1, mov_pdb_x2, mov_pdb_y2, mov_pdb_z2,1.0,apl_val_down);
+			  fprintf(dens_fp_sd_pdb[ii],pdbform,"ATOM",(aux_ind+1)%100000,"C","XXX",chA,1, mov_pdb_x1, mov_pdb_y1, mov_pdb_z1, 1.0,apl_sd_up);
+			  fprintf(dens_fp_sd_pdb[ii],pdbform,"ATOM",(aux_ind+1)%100000,"C","XXX",chB,1, mov_pdb_x2, mov_pdb_y2, mov_pdb_z2,1.0,apl_sd_down);
+
+			  fprintf(dens_up_fp_avg_dat[ii],"%f	",apl_val_up);
+			  fprintf(dens_up_fp_sd_dat[ii],"%f	",apl_sd_up);
+			  mat_low_dens_avg[ii][binx-1-i] = apl_val_down;
+			  mat_low_dens_sd[ii][binx-1-i] = apl_sd_down;
+                      }
+		  }
+		  /*****************************************DENSITY*******************************************/
+
+
 		  /***********************************ORDER PARAM*************************************/
-		  if(order)
+		  if(bOrder)
 		  {
 			  for(foo=0; foo<order_atom_num1-2; foo++)
 			  {
@@ -2784,7 +3066,7 @@ if(mat)
 
 
 		  /*****************************************Curvature*******************************************/
-		  if(curve)
+		  if(bCurve)
 		  {
 			  if(normal==0)
 			  {
@@ -2848,13 +3130,13 @@ if(mat)
 		  /*****************************************Curvature*******************************************/
 	  }
 
-	  if(thick)
+	  if(bThick)
 	  {
 		  fprintf(thick_fp_avg_dat,"\n");
 		  fprintf(thick_fp_sd_dat,"\n");
 	  }
 
-	  if(apl)
+	  if(bApl)
 	  {
 		  for(low_i=0; low_i<binx; low_i++)
 		  {
@@ -2867,7 +3149,7 @@ if(mat)
 		  fprintf(apl_down_fp_sd_dat,"\n");
 	  }
 
-	  if(order)
+	  if(bOrder)
 	  {
 		  for(foo=0; foo<order_atom_num1-2; foo++)
 		  {
@@ -2889,7 +3171,7 @@ if(mat)
 		  }
 	  }
 
-	  if(curve)
+	  if(bCurve)
 	  {
 		  for(low_i=0; low_i<binx; low_i++)
 		  {
@@ -2904,8 +3186,54 @@ if(mat)
   }
 
 
+  /**************** free multi lipid Group ************/
+  sfree(idlipGroup);
+  if(nonflat)
+  { 
+	sfree(idtailGroup); 
+        sfree(ntailGroup);
+  }
+  sfree(nlip_groupGroup);
+  sfree(nlipGroup);
+  sfree(lipid_numGroup);
+
+
+  /**************** free Density  ************/
+  if( bDens )
+  {
+      sfree(dens_up_fp_avg_dat);
+      sfree(dens_down_fp_avg_dat);
+      sfree(dens_up_fp_sd_dat);
+      sfree(dens_down_fp_sd_dat);
+      sfree(dens_fp_avg_pdb);
+      sfree(dens_fp_sd_pdb);
+      if( mat )
+      { 
+	sfree(fp_mov_mat_dens_up); 
+	sfree(fp_mov_mat_dens_down); 
+      }
+
+      for(ii=0; ii<lipidGroup_num; ii++)
+      {
+          for(i=0; i<grid_size; i++)
+          {
+              sfree(dens_grid_up[ii][i]);
+              sfree(dens_grid_down[ii][i]);
+          }
+          sfree(dens_grid_up[ii]);
+          sfree(dens_grid_down[ii]);
+          sfree(mat_low_dens_avg[ii]);
+          sfree(mat_low_dens_sd[ii]);
+      }
+      sfree(dens_grid_up);
+      sfree(dens_grid_down);
+      sfree(mat_low_dens_avg);
+      sfree(mat_low_dens_sd);
+  }
+
+
   /**************** free Thickness ************/
-  if(thick)
+  if(bThick)
   {
 	  fprintf(thick_fp_avg_pdb,"END");
   	  fprintf(thick_fp_sd_pdb,"END");
@@ -2933,7 +3261,7 @@ if(mat)
 
   /********** SPECIAL APL OUTPUT: LIPID INDECES ********/
   /**************** free APL ************/
-  if(apl)
+  if(bApl)
   {
 	  fprintf(apl_fp_lipids_up,"#lipid_ID	mean(APL)	stdev(APL)\n");
 	  fprintf(apl_fp_lipids_down,"#lipid_ID	mean(APL)	stdev(APL)\n");
@@ -3046,7 +3374,7 @@ if(mat)
 
 
   /**************** free Curvature ************/
-  if(curve)
+  if(bCurve)
   {
 	  sfree(gausCurveUp);
 	  sfree(gausCurveDown);
@@ -3091,7 +3419,7 @@ if(mat)
 
 
   /**************** free Order ************/
-  if(order)
+  if(bOrder)
   {
 	  fclose(order_fp_AVG_sn1);
 	  fclose(order_fp_AVG_sn2);
@@ -3263,7 +3591,7 @@ if(mat)
 
 
   /**************** free pdb movie ************/
-  if( pdb || (curve && mat) )
+  if( pdb || (bCurve && mat) )
   {
 	  for(foo=0; foo<smooth; foo++)
 	  {

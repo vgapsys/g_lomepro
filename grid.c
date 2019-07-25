@@ -27,6 +27,7 @@
 //#include <lap.h>
 #include "pdbio.h"
 #include "gstat.h"
+#include "headers.h"
 
 
 void fill_grid(int *is_cell_prot1, int *is_cell_prot2,
@@ -425,6 +426,48 @@ void fill_grid_diffus(int *is_cell_prot1, int *is_cell_prot2,
 			  }
 		  }
 	  }
+}
+
+// get x,y,z coordinates for pdb output
+void get_xyz_for_pdb( real *x, real *y, real *z, real left_x, real left_y, real bin_sizex, real bin_sizey, int normal, gmx_bool swapxy, real grid_aux_ind, int i, int j)
+{
+    *x = 0.0;
+    *y = 0.0;
+    *z = 0.0;
+
+    if(normal==0)
+    {
+        *x = 10*grid_aux_ind;
+        *y = 10*left_x+10*i*bin_sizex;
+        *z = 10*left_y+10*j*bin_sizey;
+        if(swapxy)
+        {
+            *y = 10*left_y+10*j*bin_sizey;
+            *z = 10*left_x+10*i*bin_sizex;
+        }
+    }
+    if(normal==1)
+    {
+        *x = 10*left_x+10*i*bin_sizex;
+        *y = 10*grid_aux_ind;
+        *z = 10*left_y+10*j*bin_sizey;
+        if(swapxy)
+        {
+            *x = 10*left_y+10*j*bin_sizey;
+            *z = 10*left_x+10*i*bin_sizex;
+        }
+    }
+    if(normal==2)
+    {
+        *x = 10*left_x+10*i*bin_sizex;
+        *y = 10*left_y+10*j*bin_sizey;
+        *z = 10*grid_aux_ind;
+        if(swapxy)
+        {
+            *x = 10*left_y+10*j*bin_sizey;
+            *y = 10*left_x+10*i*bin_sizex;
+        }
+    }
 }
 
 

@@ -27,7 +27,7 @@
 //#include <lap.h>
 #include "pdbio.h"
 #include "gstat.h"
-
+#include "headers.h"
 
 
 void curvature(int dirx, int diry, int dirz, int stepx, int stepy, real bin_size_x, real bin_size_y, int binx, int biny, int fr_num,

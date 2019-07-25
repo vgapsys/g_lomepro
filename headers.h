@@ -72,6 +72,16 @@ void fill_grid_order(int dirx, int diry, int dirz,
                 real *grid_up_order, real *grid_down_order, real scale, real left_x, real left_y,
                 int **order_count_up, int **order_count_down);
 
+void fill_grid_diffus(int *is_cell_prot1, int *is_cell_prot2,
+		int dirx, int diry, int dirz, rvec a1, rvec a2, int binx, int nliptop, int nlipbot,
+		t_pbc pbc, int i, int j, real bin_sizex, real bin_sizey, real min_dist, int *aux_ind,
+		int lip_ind, int k, int l, int *top_ind, rvec *lipidCOM,
+		rvec dx, real dist, real *grid_up, real *grid_down, int *top_index,
+		gmx_bool is_prot, int prot_ind, int *bot_ind, rvec *framex, real *height1, real *height2,
+		atom_id *idlip, int nprot_top, int *ptop_ind, int *pbot_ind, int *bottom_index,
+		int nprot_bot, real left_x, real left_y,
+		int diffus_steps, rvec **diffus_grid_pos_up, rvec **diffus_grid_pos_down);
+
 real calc_unsat(int id_i, int id_min_i, int id_plus_i, rvec *x, int axis, int second_unsat);
 
 void order_param(int order_atom_num1, int order_atom_num2, int norder1, int norder2,
@@ -80,5 +90,7 @@ void order_param(int order_atom_num1, int order_atom_num2, int norder1, int nord
                 real *order_sum1_sd, real *order_sum2_sd,
                 int unsat, int nunsat1, atom_id *idunsat1, int nunsat2, atom_id *idunsat2);
 
+void assign_density(real ***dens_grid, real **apl_grid, int lipidGroup_num, int *nlipGroup, atom_id **idlipGroup, int aux_ind);
 
+void get_xyz_for_pdb( real *x, real *y, real *z, real left_x, real left_y, real bin_sizex, real bin_sizey, int normal, gmx_bool swapxy, real grid_aux_ind, int i, int j);
 
