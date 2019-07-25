@@ -1551,11 +1551,11 @@ int main(int argc,char *argv[])
 
 	  /**************====1111111111====******************************/
 	  //go over the lipids for the first time: get COMs and z_mid
-	  int i=0, j=0, mod=0, lip_count=-1;
+	  int i=0, j=0, mod=0, lip_count=-1, lipAtomCount=0;
 	  real total_mass=0.0;
           for(j=0; j<lipidGroup_num; j++)
           {
-//printf("\nVG: %d %d %d\n", j,lipidGroup_num,nlipGroup[i]);
+//printf("\nVG: %d %d %d %d\n", j,lipidGroup_num,nlipGroup[j],nlip_groupGroup[j]);
              for(i=0; i<nlipGroup[j]; i++)
              {
                   mod = i % nlip_groupGroup[j];
@@ -1567,6 +1567,8 @@ int main(int argc,char *argv[])
 				  lipidCOM[lip_count][dirx] /= total_mass;
 				  lipidCOM[lip_count][diry] /= total_mass;
 				  lipidCOM[lip_count][dirz] /= total_mass;
+
+//printf("\n%f %f %f\n",lipidCOM[lip_count][dirx],lipidCOM[lip_count][diry],lipidCOM[lip_count][dirz]);
 
 				  if(lipidCOM[lip_count][dirz]>z_max)
 				  {
@@ -1602,10 +1604,11 @@ int main(int argc,char *argv[])
 			  lipidCOM[lip_count][dirz] = 0.0;
 			  total_mass = 0.0;
 		  }
-		  lipidCOM[lip_count][dirx] += top.atoms.atom[idlip[i]].m * frame.x[idlip[i]][dirx];
-		  lipidCOM[lip_count][diry] += top.atoms.atom[idlip[i]].m * frame.x[idlip[i]][diry];
-		  lipidCOM[lip_count][dirz] += top.atoms.atom[idlip[i]].m * frame.x[idlip[i]][dirz];
+		  lipidCOM[lip_count][dirx] += top.atoms.atom[idlip[lipAtomCount]].m * frame.x[idlip[lipAtomCount]][dirx];
+		  lipidCOM[lip_count][diry] += top.atoms.atom[idlip[lipAtomCount]].m * frame.x[idlip[lipAtomCount]][diry];
+		  lipidCOM[lip_count][dirz] += top.atoms.atom[idlip[lipAtomCount]].m * frame.x[idlip[lipAtomCount]][dirz];
 		  total_mass += top.atoms.atom[idlip[i]].m;
+                  lipAtomCount++;
              }
 	  }
 	  lipidCOM[lip_count][dirx] /= total_mass;
@@ -2720,54 +2723,9 @@ if(mat)
 			  fprintf(thick_fp_avg_dat,"%f	",grid[aux_ind]);
 			  fprintf(thick_fp_sd_dat,"%f	",grid_sd[aux_ind]);
 
-			  if(normal==0)
-			  {
-				  mov_pdb_x1 = 10*grid_up_avg[aux_ind];
-				  mov_pdb_x2 = 10*grid_down_avg[aux_ind];
-				  mov_pdb_y1 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_y2 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_z1 = 10*left_y+10*j*bin_sizey;
-				  mov_pdb_z2 = 10*left_y+10*j*bin_sizey;
-				  if(swapxy)
-				  {
-					  mov_pdb_y1 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_y2 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_z1 = 10*left_x+10*i*bin_sizex;
-					  mov_pdb_z2 = 10*left_x+10*i*bin_sizex;
-				  }
-			  }
-			  if(normal==1)
-			  {
-				  mov_pdb_x1 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_x2 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_y1 = 10*grid_up_avg[aux_ind];
-				  mov_pdb_y2 = 10*grid_down_avg[aux_ind];
-				  mov_pdb_z1 = 10*left_y+10*j*bin_sizey;
-				  mov_pdb_z2 = 10*left_y+10*j*bin_sizey;
-				  if(swapxy)
-				  {
-					  mov_pdb_x1 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_x2 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_z1 = 10*left_x+10*i*bin_sizex;
-					  mov_pdb_z2 = 10*left_x+10*i*bin_sizex;
-				  }
-			  }
-			  if(normal==2)
-			  {
-				  mov_pdb_x1 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_x2 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_y1 = 10*left_y+10*j*bin_sizey;
-				  mov_pdb_y2 = 10*left_y+10*j*bin_sizey;
-				  mov_pdb_z1 = 10*grid_up_avg[aux_ind];
-				  mov_pdb_z2 = 10*grid_down_avg[aux_ind];
-				  if(swapxy)
-				  {
-					  mov_pdb_x1 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_x2 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_y1 = 10*left_x+10*i*bin_sizex;
-					  mov_pdb_y2 = 10*left_x+10*i*bin_sizex;
-				  }
-			  }
+                          get_xyz_for_pdb( &mov_pdb_x1, &mov_pdb_y1, &mov_pdb_z1, left_x, left_y, bin_sizex, bin_sizey, normal, swapxy, grid_up_avg[aux_ind], i, j);
+                          get_xyz_for_pdb( &mov_pdb_x2,&mov_pdb_y2,&mov_pdb_z2, left_x, left_y, bin_sizex, bin_sizey, normal, swapxy, grid_down_avg[aux_ind], i, j);
+
 			  fprintf(thick_fp_avg_pdb,pdbform,"ATOM",(aux_ind+1)%100000,"C","XXX",chA,1, mov_pdb_x1, mov_pdb_y1, mov_pdb_z1, 1.0,grid[aux_ind]);
 			  fprintf(thick_fp_avg_pdb,pdbform,"ATOM",(aux_ind+1)%100000,"C","XXX",chB,1, mov_pdb_x2, mov_pdb_y2, mov_pdb_z2,1.0,grid[aux_ind]);
 			  fprintf(thick_fp_sd_pdb,pdbform,"ATOM",(aux_ind+1)%100000,"C","XXX",chA,1, mov_pdb_x1, mov_pdb_y1, mov_pdb_z1, 1.0,grid_sd[aux_ind]);
