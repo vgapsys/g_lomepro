@@ -400,12 +400,48 @@ int main(int argc,char *argv[])
           counter++;
       }
   }
+
+  ////// establish the relationship between overall lipid number (from 0 to lipid_num) and lipidGroup
+  // dictLipNum[lipid_num][0,1]: 0-lipidGroup_num, 1-nlipGroup(lipid number in the group)
+  // dictLipNumInv[lipidGroup_num][0,1]: 0-nlipGroup(lipid number in the group), 1-overall lipid number
+  int **dictLipNum, **dictLipNumInv, k;
+  snew(dictLipNum,lipid_num);
+  snew(dictLipNumInv,lipidGroup_num);
+
+  for(i=0; i<lipidGroup_num; i++)
+  { snew(dictLipNumInv[i],2); }
+
+  for(i=0; i<lipid_num; i++)
+  {
+      snew(dictLipNum[i],2);
+
+      counter=0;
+      for(j=0; j<lipidGroup_num; j++)
+      {
+          for(k=0; k<lipid_numGroup[j]; k++)
+          {
+              if(i==counter)
+              {
+                  dictLipNum[i][0] = j;
+                  dictLipNum[i][1] = k;
+                  dictLipNumInv[j][0] = k;
+                  dictLipNumInv[j][1] = i;
+//printf("\n%d %d %d\n", i, dictLipNum[i][0] ,dictLipNum[i][1]);
+//printf("%d %d %d\n", j, dictLipNumInv[j][0] ,dictLipNumInv[j][1]);
+                  j = lipidGroup_num;
+                  break;
+              }
+              counter++;
+          }
+      }
+  }
+
   /////////////////////////////////////////////////////////////////////////
   // nlip: total number of lipid atoms
   // lipidGroup_num: number of lipid groups (species)
   // nlipGroup[lipidGroup_num]: number of lipid atoms for every lipid species
   // idlipGroup[lipidGroup_num][nlipGroup]: IDs of lipid atoms for every species
-  // idlip[nlip]: total IDs of lipid atoms
+  // idlip[nlip]: IDs of lipid atoms
   // lipid_numGroup[lipidGroup_num]: number of lipids in every species
   // lipid_num: total number of lipids
   // ------
@@ -415,6 +451,13 @@ int main(int argc,char *argv[])
   // idtailGroup[lipidGroup_num]: lipid tail atom IDs in every group
   /////////////////////////////////////////////////////////////////////////
 
+  ////////////////// more indexing variables that are found later ///////////////////
+  // nlip_groupGroup[lipidGroup_num]: number of atoms in one lipid group for every species
+  // top_ind[nliptop]: lipidID (from 0 to lipid_num) for the top leaflet; nliptop ranges from 0 to number of top lip
+  // bot_ind[nlipbot]: lipidID (from 0 to lipid_num) for the bottom leaflet
+  // top_index: lipidID from 0 to lipid_num
+  // bottom_index: lipidID from 0 to lipid_num
+  ////////////////////////////////////////////////////////////////////////////
 
   if(is_prot)
   {
@@ -1171,10 +1214,10 @@ int main(int argc,char *argv[])
   real *apl_smooth_down_avg_Xinv;
 
   ///////////////////////////
-  // apl_lip_up[lipid_num][0,1,2,3]: 0-idlip; 1-sum_of_apl; 2-avg_of_apl; 3-avg_of_apl^2;
-  // apl_lip_down[lipid_num][0,1,2,3]: 0-idlip; 1-sum_of_apl; 2-avg_of_apl; 3-avg_of_apl^2;
-  // apl_grid_up[grid_size][0,1,2]: 0-lipidID for each cell; 1-apl; 2-apl^2;
-  // apl_grid_down[grid_size][0,1,2]: 0-lipidID for each cell; 1-apl; 2-apl^2;
+  // apl_lip_up[lipid_num][0,1,2,3]: 0-lipID; 1-sum_of_apl; 2-avg_of_apl; 3-avg_of_apl^2;
+  // apl_lip_down[lipid_num][0,1,2,3]: 0-lipID; 1-sum_of_apl; 2-avg_of_apl; 3-avg_of_apl^2;
+  // apl_grid_up[grid_size][0,1,2]: 0-lipID for each cell; 1-apl; 2-apl^2;
+  // apl_grid_down[grid_size][0,1,2]: 0-lipID for each cell; 1-apl; 2-apl^2;
 
   if(bApl || bDens)
   {
@@ -1196,8 +1239,8 @@ int main(int argc,char *argv[])
 			  snew(apl_lip_down[i],4);
 			  if(i<lipid_num)
 			  {
-				  apl_lip_up[i][0]=idlip[i];
-				  apl_lip_down[i][0]=idlip[i];
+				  apl_lip_up[i][0]=i; //idlip[i];
+				  apl_lip_down[i][0]=i; //idlip[i];
 			  }
 			  else
 			  {
@@ -1214,9 +1257,9 @@ int main(int argc,char *argv[])
 		  for(i=0;i<lipid_num;i++)
 		  {
 			  snew(apl_lip_up[i],4);
-			  apl_lip_up[i][0]=idlip[i];
+			  apl_lip_up[i][0]=i; //idlip[i];
 			  snew(apl_lip_down[i],4);
-			  apl_lip_down[i][0]=idlip[i];
+			  apl_lip_down[i][0]=i; //idlip[i];
 		  }
 	  }
 
@@ -2442,8 +2485,8 @@ if(mat)
 		      aux_ind = get_ind(i,j,binx);
 //printf("%d\n",(int)apl_grid_up[aux_ind][0]);
 
-                      assign_density(dens_grid_up,apl_grid_up,lipidGroup_num,nlipGroup,idlipGroup,aux_ind);
-                      assign_density(dens_grid_down,apl_grid_down,lipidGroup_num,nlipGroup,idlipGroup,aux_ind);
+                      assign_density(dens_grid_up,apl_grid_up,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                      assign_density(dens_grid_down,apl_grid_down,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
 //                      printf("\n%d %f\n", aux_ind,dens_grid_up[0][aux_ind][0]);
 
 /*                      for(ii=0; ii<lipidGroup_num; ii++) // for every lipid species fill the grid
@@ -3154,6 +3197,12 @@ if(mat)
   sfree(nlip_groupGroup);
   sfree(nlipGroup);
   sfree(lipid_numGroup);
+  for(i=0; i<lipid_num; i++)
+  { sfree(dictLipNum[i]); }
+  for(i=0; i<lipidGroup_num; i++)
+  { sfree(dictLipNumInv[i]); }
+  sfree(dictLipNum);
+  sfree(dictLipNumInv);
 
 
   /**************** free Density  ************/
@@ -3209,7 +3258,7 @@ if(mat)
   		  }
   		  sfree(grid_smooth_frames);
   		  sfree(grid_smooth_avg);
-  		  if(mat)
+  	  if(mat)
   		  { fclose(fp_mov_mat_thick); }
   	  }
   }
