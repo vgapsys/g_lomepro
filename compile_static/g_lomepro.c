@@ -400,12 +400,48 @@ int main(int argc,char *argv[])
           counter++;
       }
   }
+
+  ////// establish the relationship between overall lipid number (from 0 to lipid_num) and lipidGroup
+  // dictLipNum[lipid_num][0,1]: 0-lipidGroup_num, 1-nlipGroup(lipid number in the group)
+  // dictLipNumInv[lipidGroup_num][0,1]: 0-nlipGroup(lipid number in the group), 1-overall lipid number
+  int **dictLipNum, **dictLipNumInv, k;
+  snew(dictLipNum,lipid_num);
+  snew(dictLipNumInv,lipidGroup_num);
+
+  for(i=0; i<lipidGroup_num; i++)
+  { snew(dictLipNumInv[i],2); }
+
+  for(i=0; i<lipid_num; i++)
+  {
+      snew(dictLipNum[i],2);
+
+      counter=0;
+      for(j=0; j<lipidGroup_num; j++)
+      {
+          for(k=0; k<lipid_numGroup[j]; k++)
+          {
+              if(i==counter)
+              {
+                  dictLipNum[i][0] = j;
+                  dictLipNum[i][1] = k;
+                  dictLipNumInv[j][0] = k;
+                  dictLipNumInv[j][1] = i;
+//printf("\n%d %d %d\n", i, dictLipNum[i][0] ,dictLipNum[i][1]);
+//printf("%d %d %d\n", j, dictLipNumInv[j][0] ,dictLipNumInv[j][1]);
+                  j = lipidGroup_num;
+                  break;
+              }
+              counter++;
+          }
+      }
+  }
+
   /////////////////////////////////////////////////////////////////////////
   // nlip: total number of lipid atoms
   // lipidGroup_num: number of lipid groups (species)
   // nlipGroup[lipidGroup_num]: number of lipid atoms for every lipid species
   // idlipGroup[lipidGroup_num][nlipGroup]: IDs of lipid atoms for every species
-  // idlip[nlip]: total IDs of lipid atoms
+  // idlip[nlip]: IDs of lipid atoms
   // lipid_numGroup[lipidGroup_num]: number of lipids in every species
   // lipid_num: total number of lipids
   // ------
@@ -415,6 +451,13 @@ int main(int argc,char *argv[])
   // idtailGroup[lipidGroup_num]: lipid tail atom IDs in every group
   /////////////////////////////////////////////////////////////////////////
 
+  ////////////////// more indexing variables that are found later ///////////////////
+  // nlip_groupGroup[lipidGroup_num]: number of atoms in one lipid group for every species
+  // top_ind[nliptop]: lipidID (from 0 to lipid_num) for the top leaflet; nliptop ranges from 0 to number of top lip
+  // bot_ind[nlipbot]: lipidID (from 0 to lipid_num) for the bottom leaflet
+  // top_index: lipidID from 0 to lipid_num
+  // bottom_index: lipidID from 0 to lipid_num
+  ////////////////////////////////////////////////////////////////////////////
 
   if(is_prot)
   {
@@ -1171,10 +1214,10 @@ int main(int argc,char *argv[])
   real *apl_smooth_down_avg_Xinv;
 
   ///////////////////////////
-  // apl_lip_up[lipid_num][0,1,2,3]: 0-idlip; 1-sum_of_apl; 2-avg_of_apl; 3-avg_of_apl^2;
-  // apl_lip_down[lipid_num][0,1,2,3]: 0-idlip; 1-sum_of_apl; 2-avg_of_apl; 3-avg_of_apl^2;
-  // apl_grid_up[grid_size][0,1,2]: 0-lipidID for each cell; 1-apl; 2-apl^2;
-  // apl_grid_down[grid_size][0,1,2]: 0-lipidID for each cell; 1-apl; 2-apl^2;
+  // apl_lip_up[lipid_num][0,1,2,3]: 0-lipID; 1-sum_of_apl; 2-avg_of_apl; 3-avg_of_apl^2;
+  // apl_lip_down[lipid_num][0,1,2,3]: 0-lipID; 1-sum_of_apl; 2-avg_of_apl; 3-avg_of_apl^2;
+  // apl_grid_up[grid_size][0,1,2]: 0-lipID for each cell; 1-apl; 2-apl^2;
+  // apl_grid_down[grid_size][0,1,2]: 0-lipID for each cell; 1-apl; 2-apl^2;
 
   if(bApl || bDens)
   {
@@ -1196,8 +1239,8 @@ int main(int argc,char *argv[])
 			  snew(apl_lip_down[i],4);
 			  if(i<lipid_num)
 			  {
-				  apl_lip_up[i][0]=idlip[i];
-				  apl_lip_down[i][0]=idlip[i];
+				  apl_lip_up[i][0]=i; //idlip[i];
+				  apl_lip_down[i][0]=i; //idlip[i];
 			  }
 			  else
 			  {
@@ -1214,9 +1257,9 @@ int main(int argc,char *argv[])
 		  for(i=0;i<lipid_num;i++)
 		  {
 			  snew(apl_lip_up[i],4);
-			  apl_lip_up[i][0]=idlip[i];
+			  apl_lip_up[i][0]=i; //idlip[i];
 			  snew(apl_lip_down[i],4);
-			  apl_lip_down[i][0]=idlip[i];
+			  apl_lip_down[i][0]=i; //idlip[i];
 		  }
 	  }
 
@@ -1551,11 +1594,11 @@ int main(int argc,char *argv[])
 
 	  /**************====1111111111====******************************/
 	  //go over the lipids for the first time: get COMs and z_mid
-	  int i=0, j=0, mod=0, lip_count=-1;
+	  int i=0, j=0, mod=0, lip_count=-1, lipAtomCount=0;
 	  real total_mass=0.0;
           for(j=0; j<lipidGroup_num; j++)
           {
-//printf("\nVG: %d %d %d\n", j,lipidGroup_num,nlipGroup[i]);
+//printf("\nVG: %d %d %d %d\n", j,lipidGroup_num,nlipGroup[j],nlip_groupGroup[j]);
              for(i=0; i<nlipGroup[j]; i++)
              {
                   mod = i % nlip_groupGroup[j];
@@ -1567,6 +1610,8 @@ int main(int argc,char *argv[])
 				  lipidCOM[lip_count][dirx] /= total_mass;
 				  lipidCOM[lip_count][diry] /= total_mass;
 				  lipidCOM[lip_count][dirz] /= total_mass;
+
+//printf("\n%f %f %f\n",lipidCOM[lip_count][dirx],lipidCOM[lip_count][diry],lipidCOM[lip_count][dirz]);
 
 				  if(lipidCOM[lip_count][dirz]>z_max)
 				  {
@@ -1602,10 +1647,11 @@ int main(int argc,char *argv[])
 			  lipidCOM[lip_count][dirz] = 0.0;
 			  total_mass = 0.0;
 		  }
-		  lipidCOM[lip_count][dirx] += top.atoms.atom[idlip[i]].m * frame.x[idlip[i]][dirx];
-		  lipidCOM[lip_count][diry] += top.atoms.atom[idlip[i]].m * frame.x[idlip[i]][diry];
-		  lipidCOM[lip_count][dirz] += top.atoms.atom[idlip[i]].m * frame.x[idlip[i]][dirz];
+		  lipidCOM[lip_count][dirx] += top.atoms.atom[idlip[lipAtomCount]].m * frame.x[idlip[lipAtomCount]][dirx];
+		  lipidCOM[lip_count][diry] += top.atoms.atom[idlip[lipAtomCount]].m * frame.x[idlip[lipAtomCount]][diry];
+		  lipidCOM[lip_count][dirz] += top.atoms.atom[idlip[lipAtomCount]].m * frame.x[idlip[lipAtomCount]][dirz];
 		  total_mass += top.atoms.atom[idlip[i]].m;
+                  lipAtomCount++;
              }
 	  }
 	  lipidCOM[lip_count][dirx] /= total_mass;
@@ -2439,8 +2485,8 @@ if(mat)
 		      aux_ind = get_ind(i,j,binx);
 //printf("%d\n",(int)apl_grid_up[aux_ind][0]);
 
-                      assign_density(dens_grid_up,apl_grid_up,lipidGroup_num,nlipGroup,idlipGroup,aux_ind);
-                      assign_density(dens_grid_down,apl_grid_down,lipidGroup_num,nlipGroup,idlipGroup,aux_ind);
+                      assign_density(dens_grid_up,apl_grid_up,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                      assign_density(dens_grid_down,apl_grid_down,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
 //                      printf("\n%d %f\n", aux_ind,dens_grid_up[0][aux_ind][0]);
 
 /*                      for(ii=0; ii<lipidGroup_num; ii++) // for every lipid species fill the grid
@@ -2720,54 +2766,9 @@ if(mat)
 			  fprintf(thick_fp_avg_dat,"%f	",grid[aux_ind]);
 			  fprintf(thick_fp_sd_dat,"%f	",grid_sd[aux_ind]);
 
-			  if(normal==0)
-			  {
-				  mov_pdb_x1 = 10*grid_up_avg[aux_ind];
-				  mov_pdb_x2 = 10*grid_down_avg[aux_ind];
-				  mov_pdb_y1 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_y2 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_z1 = 10*left_y+10*j*bin_sizey;
-				  mov_pdb_z2 = 10*left_y+10*j*bin_sizey;
-				  if(swapxy)
-				  {
-					  mov_pdb_y1 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_y2 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_z1 = 10*left_x+10*i*bin_sizex;
-					  mov_pdb_z2 = 10*left_x+10*i*bin_sizex;
-				  }
-			  }
-			  if(normal==1)
-			  {
-				  mov_pdb_x1 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_x2 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_y1 = 10*grid_up_avg[aux_ind];
-				  mov_pdb_y2 = 10*grid_down_avg[aux_ind];
-				  mov_pdb_z1 = 10*left_y+10*j*bin_sizey;
-				  mov_pdb_z2 = 10*left_y+10*j*bin_sizey;
-				  if(swapxy)
-				  {
-					  mov_pdb_x1 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_x2 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_z1 = 10*left_x+10*i*bin_sizex;
-					  mov_pdb_z2 = 10*left_x+10*i*bin_sizex;
-				  }
-			  }
-			  if(normal==2)
-			  {
-				  mov_pdb_x1 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_x2 = 10*left_x+10*i*bin_sizex;
-				  mov_pdb_y1 = 10*left_y+10*j*bin_sizey;
-				  mov_pdb_y2 = 10*left_y+10*j*bin_sizey;
-				  mov_pdb_z1 = 10*grid_up_avg[aux_ind];
-				  mov_pdb_z2 = 10*grid_down_avg[aux_ind];
-				  if(swapxy)
-				  {
-					  mov_pdb_x1 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_x2 = 10*left_y+10*j*bin_sizey;
-					  mov_pdb_y1 = 10*left_x+10*i*bin_sizex;
-					  mov_pdb_y2 = 10*left_x+10*i*bin_sizex;
-				  }
-			  }
+                          get_xyz_for_pdb( &mov_pdb_x1, &mov_pdb_y1, &mov_pdb_z1, left_x, left_y, bin_sizex, bin_sizey, normal, swapxy, grid_up_avg[aux_ind], i, j);
+                          get_xyz_for_pdb( &mov_pdb_x2,&mov_pdb_y2,&mov_pdb_z2, left_x, left_y, bin_sizex, bin_sizey, normal, swapxy, grid_down_avg[aux_ind], i, j);
+
 			  fprintf(thick_fp_avg_pdb,pdbform,"ATOM",(aux_ind+1)%100000,"C","XXX",chA,1, mov_pdb_x1, mov_pdb_y1, mov_pdb_z1, 1.0,grid[aux_ind]);
 			  fprintf(thick_fp_avg_pdb,pdbform,"ATOM",(aux_ind+1)%100000,"C","XXX",chB,1, mov_pdb_x2, mov_pdb_y2, mov_pdb_z2,1.0,grid[aux_ind]);
 			  fprintf(thick_fp_sd_pdb,pdbform,"ATOM",(aux_ind+1)%100000,"C","XXX",chA,1, mov_pdb_x1, mov_pdb_y1, mov_pdb_z1, 1.0,grid_sd[aux_ind]);
@@ -3196,6 +3197,12 @@ if(mat)
   sfree(nlip_groupGroup);
   sfree(nlipGroup);
   sfree(lipid_numGroup);
+  for(i=0; i<lipid_num; i++)
+  { sfree(dictLipNum[i]); }
+  for(i=0; i<lipidGroup_num; i++)
+  { sfree(dictLipNumInv[i]); }
+  sfree(dictLipNum);
+  sfree(dictLipNumInv);
 
 
   /**************** free Density  ************/
@@ -3251,7 +3258,7 @@ if(mat)
   		  }
   		  sfree(grid_smooth_frames);
   		  sfree(grid_smooth_avg);
-  		  if(mat)
+  	  if(mat)
   		  { fclose(fp_mov_mat_thick); }
   	  }
   }

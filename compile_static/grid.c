@@ -51,7 +51,8 @@ void fill_grid(int *is_cell_prot1, int *is_cell_prot2,
 	  lip_ind = 0;
 	  for(k=0; k<nliptop; k++)
 	  {
-		  lip_ind = top_ind[k];
+// top_ind[nliptop]: lipidID (from 0 to lipid_num) for the top leaflet; nliptop ranges from 0 to number of top lip
+		  lip_ind = top_ind[k]; // lipid id (from 0 to lipid_num)
 
 		  a2[dirx] = lipidCOM[lip_ind][dirx];
 		  a2[diry] = lipidCOM[lip_ind][diry];
@@ -64,7 +65,8 @@ void fill_grid(int *is_cell_prot1, int *is_cell_prot2,
 			  grid_up[*aux_ind] = lipidCOM[lip_ind][dirz];
 			  *height1 = grid_up[*aux_ind];
 			  min_dist = dist;
-			  *top_index=idlip[lip_ind];
+			  *top_index= lip_ind; //idlip[lip_ind];
+//printf("%d\n", *top_index);
 		  }
 	  }
 	  if(is_prot)
@@ -108,7 +110,7 @@ void fill_grid(int *is_cell_prot1, int *is_cell_prot2,
 			  grid_down[*aux_ind] = lipidCOM[lip_ind][dirz];
 			  *height2 = grid_down[*aux_ind];
 			  min_dist = dist;
-			  *bottom_index=idlip[lip_ind];
+			  *bottom_index=lip_ind;//idlip[lip_ind];
 		  }
 	  }
 	  if(is_prot)
@@ -329,7 +331,7 @@ void fill_grid_diffus(int *is_cell_prot1, int *is_cell_prot2,
 			  grid_up[*aux_ind] = lipidCOM[lip_ind][dirz];
 			  *height1 = grid_up[*aux_ind];
 			  min_dist = dist;
-			  *top_index=idlip[lip_ind];
+			  *top_index=lip_ind;//idlip[lip_ind];
 		  }
 	  }
 	  if(is_prot)
@@ -401,7 +403,7 @@ void fill_grid_diffus(int *is_cell_prot1, int *is_cell_prot2,
 			  grid_down[*aux_ind] = lipidCOM[lip_ind][dirz];
 			  *height2 = grid_down[*aux_ind];
 			  min_dist = dist;
-			  *bottom_index=idlip[lip_ind];
+			  *bottom_index=lip_ind;//idlip[lip_ind];
 		  }
 	  }
 	  if(is_prot)
