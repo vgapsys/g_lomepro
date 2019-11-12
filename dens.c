@@ -31,7 +31,7 @@
 
 
 // assign density to a grid cell
-void assign_density(real ***dens_grid, real **apl_grid, int lipidGroup_num, int *nlipGroup, int **dictLipNum, int **dictLipNumInv, int aux_ind)
+/*void foo_assign_density(real ***dens_grid, real **apl_grid, int lipidGroup_num, int *nlipGroup, int **dictLipNum, int **dictLipNumInv, int aux_ind)
 {
     int i,j,k;
     real densVal = 0.0;
@@ -44,6 +44,27 @@ void assign_density(real ***dens_grid, real **apl_grid, int lipidGroup_num, int 
         if(dictLipNum[lipidID][0]==i)
         {
             densVal = 1.0/apl_grid[aux_ind][1];
+        }
+
+        dens_grid[i][aux_ind][0] += densVal;
+        dens_grid[i][aux_ind][1] += densVal*densVal;
+    }
+}*/
+
+// assign density to a grid cell
+void assign_density(real ***dens_grid, real apl_val, real **apl_grid, int lipidGroup_num, int *nlipGroup, int **dictLipNum, int **dictLipNumInv, int aux_ind)
+{
+    int i,j,k;
+    real densVal = 0.0;
+    int lipidID = (int)apl_grid[aux_ind][0]; // ID of a lipid atom assigned to this grid cell
+
+    for(i=0; i<lipidGroup_num; i++) // investigate each lipid group
+    {
+        densVal = 0.0;
+
+        if(dictLipNum[lipidID][0]==i)
+        {
+            densVal = 1.0/apl_val;
         }
 
         dens_grid[i][aux_ind][0] += densVal;

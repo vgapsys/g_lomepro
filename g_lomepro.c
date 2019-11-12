@@ -403,13 +403,30 @@ int main(int argc,char *argv[])
 
   ////// establish the relationship between overall lipid number (from 0 to lipid_num) and lipidGroup
   // dictLipNum[lipid_num][0,1]: 0-lipidGroup_num, 1-nlipGroup(lipid number in the group)
-  // dictLipNumInv[lipidGroup_num][0,1]: 0-nlipGroup(lipid number in the group), 1-overall lipid number
+       /*if protein exists, the last entry is for protein 
+          dictLipNum[lipid_num][0]=lipidGroup_num
+          dictLipNum[lipid_num][1]=0*/
+  // dictLipNumInv[lipidGroup_num][0,1]: 0-nlipGroup(lipid number in the group), 1-overall lipid number; 
+       /*if protein exists, the last entry is for protein 
+          dictLipNumInv[lipidGroup_num][0]=0
+          dictLipNumInv[lipidGroup_num][1]=lipid_num*/
   int **dictLipNum, **dictLipNumInv, k;
-  snew(dictLipNum,lipid_num);
-  snew(dictLipNumInv,lipidGroup_num);
+  if( is_prot )
+  {
+      snew(dictLipNum,lipid_num+1);
+      snew(dictLipNumInv,lipidGroup_num);
+  }
+  else
+  {
+      snew(dictLipNum,lipid_num);
+      snew(dictLipNumInv,lipidGroup_num);
+  }
 
   for(i=0; i<lipidGroup_num; i++)
   { snew(dictLipNumInv[i],2); }
+  if( is_prot )
+  { snew(dictLipNumInv[lipidGroup_num],2); }
+
 
   for(i=0; i<lipid_num; i++)
   {
@@ -435,10 +452,18 @@ int main(int argc,char *argv[])
           }
       }
   }
+  if( is_prot )
+  {
+      snew(dictLipNum[lipid_num],2);
+      dictLipNum[lipid_num][0] = lipidGroup_num;
+      dictLipNum[lipid_num][1] = 0;
+      dictLipNumInv[lipidGroup_num][0] = 0;
+      dictLipNumInv[lipidGroup_num][1] = lipid_num;
+  }
 
   /////////////////////////////////////////////////////////////////////////
   // nlip: total number of lipid atoms
-  // lipidGroup_num: number of lipid groups (species)
+  // lipidGroup_num: number of lipid groups (species); if protein exists, the last group is for protein
   // nlipGroup[lipidGroup_num]: number of lipid atoms for every lipid species
   // idlipGroup[lipidGroup_num][nlipGroup]: IDs of lipid atoms for every species
   // idlip[nlip]: IDs of lipid atoms
@@ -2288,6 +2313,7 @@ if(mat)
 
 
 /************************************ APL SECOND GO *******************************************/
+/************************************ DENSITY *******************************************/
 	  if(bApl || bDens)
 	  {
 		  for(j=biny-1; j>=0; j--)
@@ -2303,12 +2329,22 @@ if(mat)
 					  {
 						  apl_grid_up[aux_ind][1] += apl_lip_up[lipid_num][1];
 						  apl_grid_up[aux_ind][2] += pow(apl_lip_up[lipid_num][1],2);
+                                                  //// Density ////
+                                                  if( bDens )
+                                                  {
+                                                      assign_density(dens_grid_up,apl_lip_up[lipid_num][1],apl_grid_up,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                                                  }
 						  time_saver_up=1;
 					  }
 					  if(apl_grid_down[aux_ind][0]==-1)
 					  {
 						  apl_grid_down[aux_ind][1] += apl_lip_down[lipid_num][1];
 						  apl_grid_down[aux_ind][2] += pow(apl_lip_down[lipid_num][1],2);
+                                                  //// Density ////
+                                                  if( bDens )
+                                                  {
+                                                      assign_density(dens_grid_down,apl_lip_down[lipid_num][1],apl_grid_down,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                                                  }
 						  time_saver_down=1;
 					  }
 					  for(k=0;k<lipid_num+1;k++)
@@ -2321,12 +2357,22 @@ if(mat)
 						  {
 							  apl_grid_up[aux_ind][1] += apl_lip_up[k][1];
 							  apl_grid_up[aux_ind][2] += pow(apl_lip_up[k][1],2);
+                                                          //// Density ////
+                                                          if( bDens )
+                                                          {
+                                                              assign_density(dens_grid_up,apl_lip_up[k][1],apl_grid_up,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                                                          }
 							  time_saver_up=1;
 						  }
 						  if(apl_lip_down[k][0]==apl_grid_down[aux_ind][0])
 						  {
 							  apl_grid_down[aux_ind][1] += apl_lip_down[k][1];
 							  apl_grid_down[aux_ind][2] += pow(apl_lip_down[k][1],2);
+                                                          //// Density ////
+                                                          if( bDens )
+                                                          {
+                                                              assign_density(dens_grid_down,apl_lip_down[k][1],apl_grid_down,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                                                          }
 							  time_saver_down=1;
 						  }
 					  }
@@ -2339,12 +2385,22 @@ if(mat)
 						  {
 							  apl_grid_up[aux_ind][1] += apl_lip_up[k][1];
 							  apl_grid_up[aux_ind][2] += pow(apl_lip_up[k][1],2);
+                                                          //// Density ////
+                                                          if( bDens )
+                                                          {
+                                                              assign_density(dens_grid_up,apl_lip_up[k][1],apl_grid_up,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                                                          }
 							  time_saver_up=1;
 						  }
 						  if(apl_lip_down[k][0]==apl_grid_down[aux_ind][0])
 						  {
 							  apl_grid_down[aux_ind][1] += apl_lip_down[k][1];
 							  apl_grid_down[aux_ind][2] += pow(apl_lip_down[k][1],2);
+                                                          //// Density ////
+                                                          if( bDens )
+                                                          {
+                                                              assign_density(dens_grid_down,apl_lip_down[k][1],apl_grid_down,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                                                          }
 							  time_saver_down=1;
 						  }
 						  if(time_saver_up*time_saver_down==1)
@@ -2470,11 +2526,12 @@ if(mat)
 		  { fprintf(apl_fp_over_time,"%f	MEAN	%f\n",frame.time,bar); }
 
 	  }
+          /************************************ DENSITY *******************************************/
 	  /************************************ APL SECOND GO *******************************************/
 
 
 	  /************************************ DENSITY *******************************************/
-          if(bDens)
+/*          if(bDens)
           {
               for(j=biny-1; j>=0; j--)
 	      {
@@ -2489,26 +2546,9 @@ if(mat)
                       assign_density(dens_grid_down,apl_grid_down,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
 //                      printf("\n%d %f\n", aux_ind,dens_grid_up[0][aux_ind][0]);
 
-/*                      for(ii=0; ii<lipidGroup_num; ii++) // for every lipid species fill the grid
-                      {
-                          for(k=0; k<nlipGroup[ii]; k++)
-                          {
-                              dens_grid_upi
-                              printf("%d\n", idlipGroup[ii][k]);
-                          }*/
-//exit(0);
-
-
-/*		      if(is_prot)
-		      {
-	              }
-                      else
-                      {
-                      }*/
-
-                      }
                   }
-          }
+              }
+          }*/
 	  /************************************ DENSITY *******************************************/
 
 
@@ -2690,8 +2730,11 @@ if(mat)
   {
       for(i=0; i<lipidGroup_num; i++)
       {
-          fprintf(dens_fp_avg_pdb[i],"TITLE     Area per lipid\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
-	  fprintf(dens_fp_sd_pdb[i],"TITLE     Area per lipid\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
+          fprintf(dens_fp_avg_pdb[i],"TITLE     Lipid density\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
+	  fprintf(dens_fp_sd_pdb[i],"TITLE     Lipid density\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
+      }
+      if( is_prot )
+      { //unfinished... output protein as the last lipidGroup_num 
       }
   }
 
@@ -3148,6 +3191,22 @@ if(mat)
 		  fprintf(apl_up_fp_sd_dat,"\n");
 		  fprintf(apl_down_fp_avg_dat,"\n");
 		  fprintf(apl_down_fp_sd_dat,"\n");
+	  }
+
+	  if(bDens)
+	  {
+                  for(ii=0; ii<lipidGroup_num; ii++)
+                  {
+		      for(low_i=0; low_i<binx; low_i++)
+		      {
+                          fprintf(dens_down_fp_avg_dat[ii],"%f	",mat_low_dens_avg[ii][low_i]);
+                          fprintf(dens_down_fp_sd_dat[ii],"%f	",mat_low_dens_sd[ii][low_i]);
+                      }
+                      fprintf(dens_up_fp_avg_dat[ii],"\n");
+                      fprintf(dens_up_fp_sd_dat[ii],"\n");
+                      fprintf(dens_down_fp_avg_dat[ii],"\n");
+                      fprintf(dens_down_fp_sd_dat[ii],"\n");
+                  }
 	  }
 
 	  if(bOrder)
