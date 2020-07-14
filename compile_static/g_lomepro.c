@@ -403,13 +403,30 @@ int main(int argc,char *argv[])
 
   ////// establish the relationship between overall lipid number (from 0 to lipid_num) and lipidGroup
   // dictLipNum[lipid_num][0,1]: 0-lipidGroup_num, 1-nlipGroup(lipid number in the group)
-  // dictLipNumInv[lipidGroup_num][0,1]: 0-nlipGroup(lipid number in the group), 1-overall lipid number
+       /*if protein exists, the last entry is for protein 
+          dictLipNum[lipid_num][0]=lipidGroup_num
+          dictLipNum[lipid_num][1]=0*/
+  // dictLipNumInv[lipidGroup_num][0,1]: 0-nlipGroup(lipid number in the group), 1-overall lipid number; 
+       /*if protein exists, the last entry is for protein 
+          dictLipNumInv[lipidGroup_num][0]=0
+          dictLipNumInv[lipidGroup_num][1]=lipid_num*/
   int **dictLipNum, **dictLipNumInv, k;
-  snew(dictLipNum,lipid_num);
-  snew(dictLipNumInv,lipidGroup_num);
+  if( is_prot )
+  {
+      snew(dictLipNum,lipid_num+1);
+      snew(dictLipNumInv,lipidGroup_num);
+  }
+  else
+  {
+      snew(dictLipNum,lipid_num);
+      snew(dictLipNumInv,lipidGroup_num);
+  }
 
   for(i=0; i<lipidGroup_num; i++)
   { snew(dictLipNumInv[i],2); }
+  if( is_prot )
+  { snew(dictLipNumInv[lipidGroup_num],2); }
+
 
   for(i=0; i<lipid_num; i++)
   {
@@ -435,10 +452,18 @@ int main(int argc,char *argv[])
           }
       }
   }
+  if( is_prot )
+  {
+      snew(dictLipNum[lipid_num],2);
+      dictLipNum[lipid_num][0] = lipidGroup_num;
+      dictLipNum[lipid_num][1] = 0;
+      dictLipNumInv[lipidGroup_num][0] = 0;
+      dictLipNumInv[lipidGroup_num][1] = lipid_num;
+  }
 
   /////////////////////////////////////////////////////////////////////////
   // nlip: total number of lipid atoms
-  // lipidGroup_num: number of lipid groups (species)
+  // lipidGroup_num: number of lipid groups (species); if protein exists, the last group is for protein
   // nlipGroup[lipidGroup_num]: number of lipid atoms for every lipid species
   // idlipGroup[lipidGroup_num][nlipGroup]: IDs of lipid atoms for every species
   // idlip[nlip]: IDs of lipid atoms
@@ -543,19 +568,19 @@ int main(int argc,char *argv[])
   {
 	  const char *foo_name = opt2fn("-thick",NFILE,fnm);
 
-	  snew(thick_name_avg_dat,strlen(foo_name)+20);
+	  snew(thick_name_avg_dat,strlen(foo_name)+100);
 	  strcpy(thick_name_avg_dat,foo_name);
 	  strcat(thick_name_avg_dat,"_avg.dat");
 
-	  snew(thick_name_sd_dat,strlen(foo_name)+20);
+	  snew(thick_name_sd_dat,strlen(foo_name)+100);
 	  strcpy(thick_name_sd_dat,foo_name);
 	  strcat(thick_name_sd_dat,"_sd.dat");
 
-	  snew(thick_name_avg_pdb,strlen(foo_name)+20);
+	  snew(thick_name_avg_pdb,strlen(foo_name)+100);
 	  strcpy(thick_name_avg_pdb,foo_name);
 	  strcat(thick_name_avg_pdb,"_avg.pdb");
 
-	  snew(thick_name_sd_pdb,strlen(foo_name)+20);
+	  snew(thick_name_sd_pdb,strlen(foo_name)+100);
 	  strcpy(thick_name_sd_pdb,foo_name);
 	  strcat(thick_name_sd_pdb,"_sd.pdb");
 
@@ -567,7 +592,7 @@ int main(int argc,char *argv[])
 	  if(pdb)
 	  {
 		  foo_name = opt2fn("-mov_pdb",NFILE,fnm);
-		  snew(thick_name_mov_pdb,strlen(foo_name)+20);
+		  snew(thick_name_mov_pdb,strlen(foo_name)+100);
 		  strcpy(thick_name_mov_pdb,foo_name);
 		  strcat(thick_name_mov_pdb,"_thickness.pdb");
 		  fp_mov_pdb_thick=ffopen(thick_name_mov_pdb,"w");
@@ -575,7 +600,7 @@ int main(int argc,char *argv[])
 	  if(mat)
 	  {
 		  foo_name = opt2fn("-mov_mat",NFILE,fnm);
-		  snew(thick_name_mov_mat,strlen(foo_name)+20);
+		  snew(thick_name_mov_mat,strlen(foo_name)+100);
 		  strcpy(thick_name_mov_mat,foo_name);
 		  strcat(thick_name_mov_mat,"_thickness.dat");
 		  fp_mov_mat_thick=ffopen(thick_name_mov_mat,"w");
@@ -612,27 +637,27 @@ int main(int argc,char *argv[])
 
       for(i=0; i<lipidGroup_num; i++)
       {
-          snew(dens_name_avg_dat,strlen(foo_name)+20);
+          snew(dens_name_avg_dat,strlen(foo_name)+100);
           snprintf(dens_name_avg_dat,1000,"%s_up_lip%d_avg.dat",foo_name,i+1);
 	  dens_up_fp_avg_dat[i] = fopen(dens_name_avg_dat,"w");
           sfree(dens_name_avg_dat);
-          snew(dens_name_avg_dat,strlen(foo_name)+20);
+          snew(dens_name_avg_dat,strlen(foo_name)+100);
           snprintf(dens_name_avg_dat,1000,"%s_down_lip%d_avg.dat",foo_name,i+1);
 	  dens_down_fp_avg_dat[i] = fopen(dens_name_avg_dat,"w");
 
-          snew(dens_name_sd_dat,strlen(foo_name)+20);
+          snew(dens_name_sd_dat,strlen(foo_name)+100);
           snprintf(dens_name_sd_dat,1000,"%s_up_lip%d_sd.dat",foo_name,i+1);
 	  dens_up_fp_sd_dat[i] = fopen(dens_name_sd_dat,"w");
           sfree(dens_name_sd_dat);
-          snew(dens_name_sd_dat,strlen(foo_name)+20);
+          snew(dens_name_sd_dat,strlen(foo_name)+100);
           snprintf(dens_name_sd_dat,1000,"%s_down_lip%d_sd.dat",foo_name,i+1);
 	  dens_down_fp_sd_dat[i] = fopen(dens_name_sd_dat,"w");
 
-          snew(dens_name_avg_pdb,strlen(foo_name)+20);
+          snew(dens_name_avg_pdb,strlen(foo_name)+100);
           snprintf(dens_name_avg_pdb,1000,"%s_lip%d_avg.pdb",foo_name,i+1);
 	  dens_fp_avg_pdb[i] = fopen(dens_name_avg_pdb,"w");
 
-          snew(dens_name_sd_pdb,strlen(foo_name)+20);
+          snew(dens_name_sd_pdb,strlen(foo_name)+100);
           snprintf(dens_name_sd_pdb,1000,"%s_lip%d_sd.pdb",foo_name,i+1);
 	  dens_fp_sd_pdb[i] = fopen(dens_name_sd_pdb,"w");
       }
@@ -643,11 +668,11 @@ int main(int argc,char *argv[])
                   snew(fp_mov_mat_dens_up,lipidGroup_num); 
                   for(i=0; i<lipidGroup_num; i++)  
                   {
-                      snew(dens_name_mov_mat,strlen(foo_name)+20);       
+                      snew(dens_name_mov_mat,strlen(foo_name)+100);       
                       snprintf(dens_name_mov_mat,1000,"%s_up_lip%d_dens.dat",foo_name,i+1);   
                       fp_mov_mat_dens_up[i] = fopen(dens_name_mov_mat,"w");          
                       sfree(dens_name_mov_mat);
-                      snew(dens_name_mov_mat,strlen(foo_name)+20);       
+                      snew(dens_name_mov_mat,strlen(foo_name)+100);       
                       snprintf(dens_name_mov_mat,1000,"%s_down_lip%d_dens.dat",foo_name,i+1);   
                       fp_mov_mat_dens_down[i] = fopen(dens_name_mov_mat,"w");          
                   }
@@ -681,44 +706,44 @@ int main(int argc,char *argv[])
     {
 	  //first deal with lipid index files
 	  // below (commented) is a prototype for APL considering lipid mixtures
-/*	  snew(apl_name_lipids_up,strlen(foo_name)+20);
+/*	  snew(apl_name_lipids_up,strlen(foo_name)+100);
           snprintf(apl_name_lipids_up,1000,"%s_lip%d_up_lipids.dat",foo_name,i+1);
-	  snew(apl_name_lipids_down,strlen(foo_name)+20);
+	  snew(apl_name_lipids_down,strlen(foo_name)+100);
 	  strcpy(apl_name_lipids_down,foo_name);
           snprintf(apl_name_lipids_down,1000,"%s_lip%d_down_lipids.dat",foo_name,i+1);
-	  snew(apl_name_over_time,strlen(foo_name)+20);
+	  snew(apl_name_over_time,strlen(foo_name)+100);
 	  strcpy(apl_name_over_time,foo_name);
           snprintf(apl_name_over_time,1000,"%s_lip%d_over_time.dat",foo_name,i+1);*/
-          snew(apl_name_lipids_up,strlen(foo_name)+20);
+          snew(apl_name_lipids_up,strlen(foo_name)+100);
           strcpy(apl_name_lipids_up,foo_name);
           strcat(apl_name_lipids_up,"_up_lipids.dat");
-          snew(apl_name_lipids_down,strlen(foo_name)+20);
+          snew(apl_name_lipids_down,strlen(foo_name)+100);
           strcpy(apl_name_lipids_down,foo_name);
           strcat(apl_name_lipids_down,"_down_lipids.dat");
-          snew(apl_name_over_time,strlen(foo_name)+20);
+          snew(apl_name_over_time,strlen(foo_name)+100);
           strcpy(apl_name_over_time,foo_name);
           strcat(apl_name_over_time,"_over_time.dat");
 
 	  //then the others
-	  snew(apl_up_name_avg_dat,strlen(foo_name)+20);
+	  snew(apl_up_name_avg_dat,strlen(foo_name)+100);
 	  strcpy(apl_up_name_avg_dat,foo_name);
 	  strcat(apl_up_name_avg_dat,"_up_avg.dat");
-	  snew(apl_down_name_avg_dat,strlen(foo_name)+20);
+	  snew(apl_down_name_avg_dat,strlen(foo_name)+100);
 	  strcpy(apl_down_name_avg_dat,foo_name);
 	  strcat(apl_down_name_avg_dat,"_down_avg.dat");
 
-	  snew(apl_up_name_sd_dat,strlen(foo_name)+20);
+	  snew(apl_up_name_sd_dat,strlen(foo_name)+100);
 	  strcpy(apl_up_name_sd_dat,foo_name);
 	  strcat(apl_up_name_sd_dat,"_up_sd.dat");
-	  snew(apl_down_name_sd_dat,strlen(foo_name)+20);
+	  snew(apl_down_name_sd_dat,strlen(foo_name)+100);
 	  strcpy(apl_down_name_sd_dat,foo_name);
 	  strcat(apl_down_name_sd_dat,"_down_sd.dat");
 
-	  snew(apl_name_avg_pdb,strlen(foo_name)+20);
+	  snew(apl_name_avg_pdb,strlen(foo_name)+100);
 	  strcpy(apl_name_avg_pdb,foo_name);
 	  strcat(apl_name_avg_pdb,"_avg.pdb");
 
-	  snew(apl_name_sd_pdb,strlen(foo_name)+20);
+	  snew(apl_name_sd_pdb,strlen(foo_name)+100);
 	  strcpy(apl_name_sd_pdb,foo_name);
 	  strcat(apl_name_sd_pdb,"_sd.pdb");
 
@@ -737,13 +762,13 @@ int main(int argc,char *argv[])
 	  if(mat)
 	  {
 		  foo_name = opt2fn("-mov_mat",NFILE,fnm);
-		  snew(apl_up_name_mov_mat,strlen(foo_name)+20);
+		  snew(apl_up_name_mov_mat,strlen(foo_name)+100);
 		  strcpy(apl_up_name_mov_mat,foo_name);
 		  strcat(apl_up_name_mov_mat,"_up_apl.dat");
 		  fp_mov_mat_apl_up=ffopen(apl_up_name_mov_mat,"w");
 
 		  foo_name = opt2fn("-mov_mat",NFILE,fnm);
-		  snew(apl_down_name_mov_mat,strlen(foo_name)+20);
+		  snew(apl_down_name_mov_mat,strlen(foo_name)+100);
 		  strcpy(apl_down_name_mov_mat,foo_name);
 		  strcat(apl_down_name_mov_mat,"_down_apl.dat");
 		  fp_mov_mat_apl_down=ffopen(apl_down_name_mov_mat,"w");
@@ -771,25 +796,25 @@ int main(int argc,char *argv[])
 	  const char *foo_name = opt2fn("-curve",NFILE,fnm);
 
 	  //file names
-	  snew(mcurve_up_name_avg_dat,strlen(foo_name)+20);
+	  snew(mcurve_up_name_avg_dat,strlen(foo_name)+100);
 	  strcpy(mcurve_up_name_avg_dat,foo_name);
 	  strcat(mcurve_up_name_avg_dat,"_mean_curve_up_avg.dat");
-	  snew(mcurve_down_name_avg_dat,strlen(foo_name)+20);
+	  snew(mcurve_down_name_avg_dat,strlen(foo_name)+100);
 	  strcpy(mcurve_down_name_avg_dat,foo_name);
 	  strcat(mcurve_down_name_avg_dat,"_mean_curve_down_avg.dat");
 
-	  snew(gcurve_up_name_avg_dat,strlen(foo_name)+20);
+	  snew(gcurve_up_name_avg_dat,strlen(foo_name)+100);
 	  strcpy(gcurve_up_name_avg_dat,foo_name);
 	  strcat(gcurve_up_name_avg_dat,"_gauss_curve_up_avg.dat");
-	  snew(gcurve_down_name_avg_dat,strlen(foo_name)+20);
+	  snew(gcurve_down_name_avg_dat,strlen(foo_name)+100);
 	  strcpy(gcurve_down_name_avg_dat,foo_name);
 	  strcat(gcurve_down_name_avg_dat,"_gauss_curve_down_avg.dat");
 
-	  snew(mcurve_name_avg_pdb,strlen(foo_name)+20);
+	  snew(mcurve_name_avg_pdb,strlen(foo_name)+100);
 	  strcpy(mcurve_name_avg_pdb,foo_name);
 	  strcat(mcurve_name_avg_pdb,"_mean_curve_avg.pdb");
 
-	  snew(gcurve_name_avg_pdb,strlen(foo_name)+20);
+	  snew(gcurve_name_avg_pdb,strlen(foo_name)+100);
 	  strcpy(gcurve_name_avg_pdb,foo_name);
 	  strcat(gcurve_name_avg_pdb,"_gauss_curve_avg.pdb");
 
@@ -804,25 +829,25 @@ int main(int argc,char *argv[])
 	  if(mat)
 	  {
 		  foo_name = opt2fn("-mov_mat",NFILE,fnm);
-		  snew(mcurve_up_name_mov_mat,strlen(foo_name)+20);
+		  snew(mcurve_up_name_mov_mat,strlen(foo_name)+100);
 		  strcpy(mcurve_up_name_mov_mat,foo_name);
 		  strcat(mcurve_up_name_mov_mat,"_up_mean_curve.dat");
 		  fp_mov_mat_mcurve_up=ffopen(mcurve_up_name_mov_mat,"w");
 
 		  foo_name = opt2fn("-mov_mat",NFILE,fnm);
-		  snew(mcurve_down_name_mov_mat,strlen(foo_name)+20);
+		  snew(mcurve_down_name_mov_mat,strlen(foo_name)+100);
 		  strcpy(mcurve_down_name_mov_mat,foo_name);
 		  strcat(mcurve_down_name_mov_mat,"_down_mean_curve.dat");
 		  fp_mov_mat_mcurve_down=ffopen(mcurve_down_name_mov_mat,"w");
 
 		  foo_name = opt2fn("-mov_mat",NFILE,fnm);
-		  snew(gcurve_up_name_mov_mat,strlen(foo_name)+20);
+		  snew(gcurve_up_name_mov_mat,strlen(foo_name)+100);
 		  strcpy(gcurve_up_name_mov_mat,foo_name);
 		  strcat(gcurve_up_name_mov_mat,"_up_gauss_curve.dat");
 		  fp_mov_mat_gcurve_up=ffopen(gcurve_up_name_mov_mat,"w");
 
 		  foo_name = opt2fn("-mov_mat",NFILE,fnm);
-		  snew(gcurve_down_name_mov_mat,strlen(foo_name)+20);
+		  snew(gcurve_down_name_mov_mat,strlen(foo_name)+100);
 		  strcpy(gcurve_down_name_mov_mat,foo_name);
 		  strcat(gcurve_down_name_mov_mat,"_down_gauss_curve.dat");
 		  fp_mov_mat_gcurve_down=ffopen(gcurve_down_name_mov_mat,"w");
@@ -895,12 +920,12 @@ int main(int argc,char *argv[])
 
   	  /*** average over all lipids (as g_order) ***/
 	  //sn1
-	  snew(order_AVG_name_sn1,strlen(foo_name)+20);
+	  snew(order_AVG_name_sn1,strlen(foo_name)+100);
 	  strcpy(order_AVG_name_sn1,foo_name);
 	  strcat(order_AVG_name_sn1,"_AVG_sn1.dat");
 	  order_fp_AVG_sn1=ffopen(order_AVG_name_sn1,"w");
 	  //sn2
-	  snew(order_AVG_name_sn2,strlen(foo_name)+20);
+	  snew(order_AVG_name_sn2,strlen(foo_name)+100);
 	  strcpy(order_AVG_name_sn2,foo_name);
 	  strcat(order_AVG_name_sn2,"_AVG_sn2.dat");
 	  order_fp_AVG_sn2=ffopen(order_AVG_name_sn2,"w");
@@ -911,13 +936,13 @@ int main(int argc,char *argv[])
 		  if(mat)
 		  {
 			  //up mov_mat sn1
-			  snew(order_up_name_mov_mat1,strlen(foo_mov_name)+20);
+			  snew(order_up_name_mov_mat1,strlen(foo_mov_name)+100);
 			  strcpy(order_up_name_mov_mat1,foo_mov_name);
 			  strcat(order_up_name_mov_mat1,"_up_sn1_atom");
 			  sprintf(order_up_name_mov_mat1,"%s%d",order_up_name_mov_mat1,i);
 			  strcat(order_up_name_mov_mat1,".dat");
 			  //down mov_mat sn1
-			  snew(order_down_name_mov_mat1,strlen(foo_mov_name)+20);
+			  snew(order_down_name_mov_mat1,strlen(foo_mov_name)+100);
 			  strcpy(order_down_name_mov_mat1,foo_mov_name);
 			  strcat(order_down_name_mov_mat1,"_down_sn1_atom");
 			  sprintf(order_down_name_mov_mat1,"%s%d",order_down_name_mov_mat1,i);
@@ -928,19 +953,19 @@ int main(int argc,char *argv[])
 		  }
 
 		  //up avg sn1
-		  snew(order_up_name_avg_dat_sn1,strlen(foo_name)+20);
+		  snew(order_up_name_avg_dat_sn1,strlen(foo_name)+100);
 		  strcpy(order_up_name_avg_dat_sn1,foo_name);
 		  strcat(order_up_name_avg_dat_sn1,"_up_avg_sn1_atom");
 		  sprintf(order_up_name_avg_dat_sn1,"%s%d",order_up_name_avg_dat_sn1,i);
 		  strcat(order_up_name_avg_dat_sn1,".dat");
 			  /*pdb avg sn1*/
-			  snew(order_name_avg_dat_sn1_pdb,strlen(foo_name)+20);
+			  snew(order_name_avg_dat_sn1_pdb,strlen(foo_name)+100);
 			  strcpy(order_name_avg_dat_sn1_pdb,foo_name);
 			  strcat(order_name_avg_dat_sn1_pdb,"_avg_sn1_atom");
 			  sprintf(order_name_avg_dat_sn1_pdb,"%s%d",order_name_avg_dat_sn1_pdb,i);
 			  strcat(order_name_avg_dat_sn1_pdb,".pdb");
 		  //down avg sn1
-		  snew(order_down_name_avg_dat_sn1,strlen(foo_name)+20);
+		  snew(order_down_name_avg_dat_sn1,strlen(foo_name)+100);
 		  strcpy(order_down_name_avg_dat_sn1,foo_name);
 		  strcat(order_down_name_avg_dat_sn1,"_down_avg_sn1_atom");
 		  sprintf(order_down_name_avg_dat_sn1,"%s%d",order_down_name_avg_dat_sn1,i);
@@ -960,13 +985,13 @@ int main(int argc,char *argv[])
 		  if(mat)
 		  {
 			  //up mov_mat sn2
-			  snew(order_up_name_mov_mat2,strlen(foo_mov_name)+20);
+			  snew(order_up_name_mov_mat2,strlen(foo_mov_name)+100);
 			  strcpy(order_up_name_mov_mat2,foo_mov_name);
 			  strcat(order_up_name_mov_mat2,"_up_sn2_atom");
 			  sprintf(order_up_name_mov_mat2,"%s%d",order_up_name_mov_mat2,i);
 			  strcat(order_up_name_mov_mat2,".dat");
 			  //down mov_mat sn2
-			  snew(order_down_name_mov_mat2,strlen(foo_mov_name)+20);
+			  snew(order_down_name_mov_mat2,strlen(foo_mov_name)+100);
 			  strcpy(order_down_name_mov_mat2,foo_mov_name);
 			  strcat(order_down_name_mov_mat2,"_down_sn2_atom");
 			  sprintf(order_down_name_mov_mat2,"%s%d",order_down_name_mov_mat2,i);
@@ -977,19 +1002,19 @@ int main(int argc,char *argv[])
 		  }
 
 		  //up avg sn2
-		  snew(order_up_name_avg_dat_sn2,strlen(foo_name)+20);
+		  snew(order_up_name_avg_dat_sn2,strlen(foo_name)+100);
 		  strcpy(order_up_name_avg_dat_sn2,foo_name);
 		  strcat(order_up_name_avg_dat_sn2,"_up_avg_sn2_atom");
 		  sprintf(order_up_name_avg_dat_sn2,"%s%d",order_up_name_avg_dat_sn2,i);
 		  strcat(order_up_name_avg_dat_sn2,".dat");
 			  /*pdb avg sn1*/
-			  snew(order_name_avg_dat_sn2_pdb,strlen(foo_name)+20);
+			  snew(order_name_avg_dat_sn2_pdb,strlen(foo_name)+100);
 			  strcpy(order_name_avg_dat_sn2_pdb,foo_name);
 			  strcat(order_name_avg_dat_sn2_pdb,"_avg_sn2_atom");
 			  sprintf(order_name_avg_dat_sn2_pdb,"%s%d",order_name_avg_dat_sn2_pdb,i);
 			  strcat(order_name_avg_dat_sn2_pdb,".pdb");
 		  //down avg sn2
-		  snew(order_down_name_avg_dat_sn2,strlen(foo_name)+20);
+		  snew(order_down_name_avg_dat_sn2,strlen(foo_name)+100);
 		  strcpy(order_down_name_avg_dat_sn2,foo_name);
 		  strcat(order_down_name_avg_dat_sn2,"_down_avg_sn2_atom");
 		  sprintf(order_down_name_avg_dat_sn2,"%s%d",order_down_name_avg_dat_sn2,i);
@@ -1019,15 +1044,15 @@ int main(int argc,char *argv[])
   {
 	  const char *foo_name = opt2fn("-diffus",NFILE,fnm);
 
-	  snew(diffus_name_up_dat,strlen(foo_name)+20);
+	  snew(diffus_name_up_dat,strlen(foo_name)+100);
 	  strcpy(diffus_name_up_dat,foo_name);
 	  strcat(diffus_name_up_dat,"_up.dat");
 
-	  snew(diffus_name_down_dat,strlen(foo_name)+20);
+	  snew(diffus_name_down_dat,strlen(foo_name)+100);
 	  strcpy(diffus_name_down_dat,foo_name);
 	  strcat(diffus_name_down_dat,"_down.dat");
 
-	  snew(diffus_name_pdb_avg,strlen(foo_name)+20);
+	  snew(diffus_name_pdb_avg,strlen(foo_name)+100);
 	  strcpy(diffus_name_pdb_avg,foo_name);
 	  strcat(diffus_name_pdb_avg,"_avg.pdb");
 
@@ -2288,6 +2313,7 @@ if(mat)
 
 
 /************************************ APL SECOND GO *******************************************/
+/************************************ DENSITY *******************************************/
 	  if(bApl || bDens)
 	  {
 		  for(j=biny-1; j>=0; j--)
@@ -2303,12 +2329,22 @@ if(mat)
 					  {
 						  apl_grid_up[aux_ind][1] += apl_lip_up[lipid_num][1];
 						  apl_grid_up[aux_ind][2] += pow(apl_lip_up[lipid_num][1],2);
+                                                  //// Density ////
+                                                  if( bDens )
+                                                  {
+                                                      assign_density(dens_grid_up,apl_lip_up[lipid_num][1],apl_grid_up,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                                                  }
 						  time_saver_up=1;
 					  }
 					  if(apl_grid_down[aux_ind][0]==-1)
 					  {
 						  apl_grid_down[aux_ind][1] += apl_lip_down[lipid_num][1];
 						  apl_grid_down[aux_ind][2] += pow(apl_lip_down[lipid_num][1],2);
+                                                  //// Density ////
+                                                  if( bDens )
+                                                  {
+                                                      assign_density(dens_grid_down,apl_lip_down[lipid_num][1],apl_grid_down,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                                                  }
 						  time_saver_down=1;
 					  }
 					  for(k=0;k<lipid_num+1;k++)
@@ -2321,12 +2357,22 @@ if(mat)
 						  {
 							  apl_grid_up[aux_ind][1] += apl_lip_up[k][1];
 							  apl_grid_up[aux_ind][2] += pow(apl_lip_up[k][1],2);
+                                                          //// Density ////
+                                                          if( bDens )
+                                                          {
+                                                              assign_density(dens_grid_up,apl_lip_up[k][1],apl_grid_up,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                                                          }
 							  time_saver_up=1;
 						  }
 						  if(apl_lip_down[k][0]==apl_grid_down[aux_ind][0])
 						  {
 							  apl_grid_down[aux_ind][1] += apl_lip_down[k][1];
 							  apl_grid_down[aux_ind][2] += pow(apl_lip_down[k][1],2);
+                                                          //// Density ////
+                                                          if( bDens )
+                                                          {
+                                                              assign_density(dens_grid_down,apl_lip_down[k][1],apl_grid_down,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                                                          }
 							  time_saver_down=1;
 						  }
 					  }
@@ -2339,12 +2385,22 @@ if(mat)
 						  {
 							  apl_grid_up[aux_ind][1] += apl_lip_up[k][1];
 							  apl_grid_up[aux_ind][2] += pow(apl_lip_up[k][1],2);
+                                                          //// Density ////
+                                                          if( bDens )
+                                                          {
+                                                              assign_density(dens_grid_up,apl_lip_up[k][1],apl_grid_up,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                                                          }
 							  time_saver_up=1;
 						  }
 						  if(apl_lip_down[k][0]==apl_grid_down[aux_ind][0])
 						  {
 							  apl_grid_down[aux_ind][1] += apl_lip_down[k][1];
 							  apl_grid_down[aux_ind][2] += pow(apl_lip_down[k][1],2);
+                                                          //// Density ////
+                                                          if( bDens )
+                                                          {
+                                                              assign_density(dens_grid_down,apl_lip_down[k][1],apl_grid_down,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
+                                                          }
 							  time_saver_down=1;
 						  }
 						  if(time_saver_up*time_saver_down==1)
@@ -2470,11 +2526,12 @@ if(mat)
 		  { fprintf(apl_fp_over_time,"%f	MEAN	%f\n",frame.time,bar); }
 
 	  }
+          /************************************ DENSITY *******************************************/
 	  /************************************ APL SECOND GO *******************************************/
 
 
 	  /************************************ DENSITY *******************************************/
-          if(bDens)
+/*          if(bDens)
           {
               for(j=biny-1; j>=0; j--)
 	      {
@@ -2489,26 +2546,9 @@ if(mat)
                       assign_density(dens_grid_down,apl_grid_down,lipidGroup_num,nlipGroup,dictLipNum,dictLipNumInv,aux_ind);
 //                      printf("\n%d %f\n", aux_ind,dens_grid_up[0][aux_ind][0]);
 
-/*                      for(ii=0; ii<lipidGroup_num; ii++) // for every lipid species fill the grid
-                      {
-                          for(k=0; k<nlipGroup[ii]; k++)
-                          {
-                              dens_grid_upi
-                              printf("%d\n", idlipGroup[ii][k]);
-                          }*/
-//exit(0);
-
-
-/*		      if(is_prot)
-		      {
-	              }
-                      else
-                      {
-                      }*/
-
-                      }
                   }
-          }
+              }
+          }*/
 	  /************************************ DENSITY *******************************************/
 
 
@@ -2690,8 +2730,11 @@ if(mat)
   {
       for(i=0; i<lipidGroup_num; i++)
       {
-          fprintf(dens_fp_avg_pdb[i],"TITLE     Area per lipid\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
-	  fprintf(dens_fp_sd_pdb[i],"TITLE     Area per lipid\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
+          fprintf(dens_fp_avg_pdb[i],"TITLE     Lipid density\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
+	  fprintf(dens_fp_sd_pdb[i],"TITLE     Lipid density\nCRYST1  %.3f  %.3f   %.3f  90.00  90.00  90.00\n",10*grid_x,10*grid_y,10*grid_z);
+      }
+      if( is_prot )
+      { //unfinished... output protein as the last lipidGroup_num 
       }
   }
 
@@ -3148,6 +3191,22 @@ if(mat)
 		  fprintf(apl_up_fp_sd_dat,"\n");
 		  fprintf(apl_down_fp_avg_dat,"\n");
 		  fprintf(apl_down_fp_sd_dat,"\n");
+	  }
+
+	  if(bDens)
+	  {
+                  for(ii=0; ii<lipidGroup_num; ii++)
+                  {
+		      for(low_i=0; low_i<binx; low_i++)
+		      {
+                          fprintf(dens_down_fp_avg_dat[ii],"%f	",mat_low_dens_avg[ii][low_i]);
+                          fprintf(dens_down_fp_sd_dat[ii],"%f	",mat_low_dens_sd[ii][low_i]);
+                      }
+                      fprintf(dens_up_fp_avg_dat[ii],"\n");
+                      fprintf(dens_up_fp_sd_dat[ii],"\n");
+                      fprintf(dens_down_fp_avg_dat[ii],"\n");
+                      fprintf(dens_down_fp_sd_dat[ii],"\n");
+                  }
 	  }
 
 	  if(bOrder)

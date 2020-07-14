@@ -90,7 +90,9 @@ void order_param(int order_atom_num1, int order_atom_num2, int norder1, int nord
                 real *order_sum1_sd, real *order_sum2_sd,
                 int unsat, int nunsat1, atom_id *idunsat1, int nunsat2, atom_id *idunsat2);
 
-void assign_density(real ***dens_grid, real **apl_grid, int lipidGroup_num, int *nlipGroup, int **dictLipNum, int **dictLipNumInv, int aux_ind);
+//void foo_assign_density(real ***dens_grid, real **apl_grid, int lipidGroup_num, int *nlipGroup, int **dictLipNum, int **dictLipNumInv, int aux_ind);
+
+void assign_density(real ***dens_grid, real apl_val, real **apl_grid, int lipidGroup_num, int *nlipGroup, int **dictLipNum, int **dictLipNumInv, int aux_ind);
 
 void get_xyz_for_pdb( real *x, real *y, real *z, real left_x, real left_y, real bin_sizex, real bin_sizey, int normal, gmx_bool swapxy, real grid_aux_ind, int i, int j);
 
