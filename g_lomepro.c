@@ -420,11 +420,31 @@ int main(int argc,char *argv[])
   char *thick_name_mov_pdb, *thick_name_mov_mat;
   FILE *fp_mov_pdb_thick, *fp_mov_mat_thick;
 
+  //for lipid index and thickness of each
+  char *thick_name_lipids_up, *thick_name_lipids_down, *thick_name_over_time;
+  FILE *thick_fp_lipids_up, *thick_fp_lipids_down, *thick_fp_over_time;
+
   gmx_bool thick = opt2bSet("-thick",NFILE,fnm);
   if(thick)
   {
 	  const char *foo_name = opt2fn("-thick",NFILE,fnm);
 
+	  //first deal with lipid index files
+	  snew(thick_name_lipids_up,strlen(foo_name)+20);
+	  strcpy(thick_name_lipids_up,foo_name);
+	  strcat(thick_name_lipids_up,"_up_lipids.dat");
+	  snew(thick_name_lipids_down,strlen(foo_name)+20);
+	  strcpy(thick_name_lipids_down,foo_name);
+	  strcat(thick_name_lipids_down,"_down_lipids.dat");
+	  snew(thick_name_over_time,strlen(foo_name)+20);
+	  strcpy(thick_name_over_time,foo_name);
+	  strcat(thick_name_over_time,"_over_time.dat");
+	  //lipid index
+	  thick_fp_lipids_up = fopen(thick_name_lipids_up,"w");
+	  thick_fp_lipids_down = fopen(thick_name_lipids_down,"w");
+	  thick_fp_over_time = fopen(thick_name_over_time,"w");
+
+	  // then the others
 	  snew(thick_name_avg_dat,strlen(foo_name)+20);
 	  strcpy(thick_name_avg_dat,foo_name);
 	  strcat(thick_name_avg_dat,"_avg.dat");
@@ -923,6 +943,8 @@ int main(int argc,char *argv[])
   real **z_smooth_frames_down;
   real *z_smooth_avg_up; //z-coord averaged over the last #smooth frames
   real *z_smooth_avg_down;
+  real **thick_lip_up=NULL; //thickness by lipid index: thick_lip_up[lipid_num]=[idlip,thick,thick_sum,thick_sum^2,tmp_counter_of_cells_per_lipid]
+  real **thick_lip_down=NULL; //thickness by lipid index
   if(thick)
   {
 	  snew(grid,grid_size);
@@ -937,7 +959,43 @@ int main(int argc,char *argv[])
 			  snew(grid_smooth_frames[foo],grid_size);
 		  }
 	  }
+       
+          // thickness by lipid index
+	  if(is_prot)
+	  {
+		  snew(thick_lip_up,lipid_num+1);
+		  snew(thick_lip_down,lipid_num+1);
+		  for(i=0;i<lipid_num+1;i++)
+		  {
+			  snew(thick_lip_up[i],5);
+			  snew(thick_lip_down[i],5);
+			  if(i<lipid_num)
+			  {
+				  thick_lip_up[i][0]=idlip[i];
+				  thick_lip_down[i][0]=idlip[i];
+			  }
+			  else
+			  {
+				  thick_lip_up[i][0]=-1;
+				  thick_lip_down[i][0]=-1;
+			  }
+		  }
+	  }
+	  else
+	  {
+		  snew(thick_lip_up,lipid_num);
+		  snew(thick_lip_down,lipid_num);
+		  int i=0;
+		  for(i=0;i<lipid_num;i++)
+		  {
+			  snew(thick_lip_up[i],5);
+			  thick_lip_up[i][0]=idlip[i];
+			  snew(thick_lip_down[i],5);
+			  thick_lip_down[i][0]=idlip[i];
+		  }
+	  }
   }
+
   if( pdb || (curve && mat) )
   {
 	  snew(z_smooth_avg_up,grid_size);
@@ -1427,6 +1485,9 @@ int main(int argc,char *argv[])
 	  {
 		  right_x = frame.box[dirx][dirx];
 		  right_y = frame.box[diry][diry];
+//                  printf("\ndirx %f %f %f\n",frame.box[dirx][0],frame.box[dirx][1],frame.box[dirx][2]);
+//                 printf("diry %f %f %f\n",frame.box[diry][0],frame.box[diry][1],frame.box[diry][2]);
+//                  printf("dirz %f %f %f\n",frame.box[dirz][0],frame.box[dirz][1],frame.box[dirz][2]);
 	  }
 
 	  /**************====22222222====******************************/
@@ -1435,6 +1496,14 @@ int main(int argc,char *argv[])
 	  bin_sizey = (right_y-left_y)/biny;
 
 	  area_of_cell = bin_sizex*bin_sizey;
+//          printf("CELL SIZE: %f\n",area_of_cell);
+//          printf("right_x: %f\n",right_x);
+//          printf("right_y: %f\n",right_y);
+//          printf("left_x: %f\n",left_x);
+//          printf("left_y: %f\n",left_y);
+//          printf("bin_x: %d\n",binx);
+//          printf("bin_y: %d\n",biny);
+//          exit(0);
 
 	  real *grid_up=NULL;	//stores z-values,
 	  snew(grid_up,grid_size);
@@ -1614,6 +1683,71 @@ int main(int argc,char *argv[])
 
 			  if(thick) //thickness
 			  {
+				  // thickness for every lipid by id
+				  time_saver_up=0;
+				  time_saver_down=0;
+				  if(is_prot) //system with protein
+				  {
+					  if(top_index==-1)
+					  {
+						  thick_lip_up[lipid_num][1] += grid_thick[aux_ind];
+						  thick_lip_up[lipid_num][4] = thick_lip_up[lipid_num][4] + 1.0;
+						  time_saver_up=1;
+					  }
+					  if(bottom_index==-1)
+					  {
+						  thick_lip_down[lipid_num][1] += grid_thick[aux_ind];
+						  thick_lip_down[lipid_num][4]=thick_lip_down[lipid_num][4]+1.0;
+						  time_saver_down=1;
+					  }
+					  if(time_saver_up*time_saver_down==0)
+					  {
+						  for(k=0;k<lipid_num+1;k++)
+						  {
+							if(thick_lip_up[k][0]==top_index)
+							{
+								thick_lip_up[k][1] += grid_thick[aux_ind];
+						                thick_lip_up[k][4]=thick_lip_up[k][4]+1.0;
+								time_saver_up=1;
+							}
+							if(thick_lip_down[k][0]==bottom_index)
+							{
+								thick_lip_down[k][1] += grid_thick[aux_ind];
+						                thick_lip_down[k][4]=thick_lip_down[k][4]+1.0;
+								time_saver_down=1;
+							}
+							if(time_saver_up*time_saver_down==1)
+							{
+								break;
+							}
+						  }
+					  }
+				  }
+				  else	//no protein
+				  {
+					  for(k=0;k<lipid_num;k++)
+					  {
+						if(thick_lip_up[k][0]==top_index)
+						{
+
+							thick_lip_up[k][1] += grid_thick[aux_ind];
+						        thick_lip_up[k][4] = thick_lip_up[k][4] + 1.0;
+							time_saver_up=1;
+						}
+						if(thick_lip_down[k][0]==bottom_index)
+						{
+							thick_lip_down[k][1] += grid_thick[aux_ind];
+						        thick_lip_down[k][4] = thick_lip_down[k][4] + 1.0;
+							time_saver_down=1;
+						}
+						if(time_saver_up*time_saver_down==1)
+						{
+							break;
+						}
+					  }
+				  }
+
+				  // matrices and pdb
 				  if(mat || pdb)
 				  {
 					  if(frame_num < smooth) //first frames
@@ -1882,6 +2016,81 @@ int main(int argc,char *argv[])
 		  }
 	  } //??????????? END OF THE OUTTER GRID ELEMENT LOOP ???????????//
 //} //end of parallel
+
+// output thickness per lipid
+if(thick)
+{
+    int number=0;
+    if(is_prot)
+    {  number=lipid_num+1;}
+    else 
+    {  number=lipid_num; }
+    for(k=0;k<number;k++)
+    {
+        if( thick_lip_up[k][4]>0 )
+        { thick_lip_up[k][1] = thick_lip_up[k][1]/thick_lip_up[k][4]; }
+        if( thick_lip_down[k][4]>0 )
+        { thick_lip_down[k][1] = thick_lip_down[k][1]/thick_lip_down[k][4]; }
+
+	thick_lip_up[k][2] += thick_lip_up[k][1];
+	thick_lip_up[k][3] += pow(thick_lip_up[k][1],2);
+
+	thick_lip_down[k][2] += thick_lip_down[k][1];
+	thick_lip_down[k][3] += pow(thick_lip_down[k][1],2);
+
+        // set temporary counters to zero
+        thick_lip_up[k][4] = 0.0;
+        thick_lip_down[k][4] = 0.0;
+    }
+
+    //output thickness per lipid over time
+    fprintf(thick_fp_over_time,"FRAME %d\n",frame_num);
+    real foo=0.0, bar=0.0;
+    int typecast_id=0;
+    for(k=0;k<number;k++)
+    {
+        // lip up
+	typecast_id = (int) thick_lip_up[k][0];
+        if(typecast_id == -1) //for protein
+        {
+            foo = thick_lip_up[k][1];
+            fprintf(thick_fp_over_time,"%f  protein_up      %f\n",frame.time,foo);
+            thick_lip_up[k][1] = 0.0;
+        }
+        else //for lipids
+        {
+            foo = thick_lip_up[k][1];
+            thick_lip_up[k][1]=0.0;
+            if(foo != 0.0)
+            {
+                bar += foo/number;
+                //time index thickness
+                fprintf(thick_fp_over_time,"%f	%d      %f\n",frame.time,typecast_id,foo);
+            }
+        }
+
+        // lip down
+        typecast_id = (int) thick_lip_down[k][0];
+        if(typecast_id == -1) //for protein
+        {
+            foo = thick_lip_down[k][1];
+            fprintf(thick_fp_over_time,"%f  protein_down      %f\n",frame.time,foo);
+            thick_lip_down[k][1] = 0.0;
+        }
+        else //for lipids
+        {
+            foo = thick_lip_down[k][1];
+            thick_lip_down[k][1]=0.0;
+            if(foo != 0.0)
+            {
+                bar += foo/number;
+                //time index thickness
+                fprintf(thick_fp_over_time,"%f	%d      %f\n",frame.time,typecast_id,foo);
+            }
+        }
+    }
+    fprintf(thick_fp_over_time,"%f	MEAN	%f\n",frame.time,bar);
+}
 
 
 
@@ -2904,9 +3113,61 @@ if(mat)
   }
 
 
+  /********** SPECIAL THICKNESS OUTPUT: LIPID INDECES ********/
   /**************** free Thickness ************/
   if(thick)
   {
+	  fprintf(thick_fp_lipids_up,"#lipid_ID	mean(THICKNESS)	stdev(THICKNESS)\n");
+	  fprintf(thick_fp_lipids_down,"#lipid_ID	mean(THICKNESS)	stdev(THICKNESS)\n");
+	  int isprotnlip=0;
+	  if(is_prot)
+	  {
+		  isprotnlip = lipid_num+1;
+	  }
+	  else
+	  {
+		  isprotnlip = lipid_num;
+	  }
+	  for(i=0;i<isprotnlip;i++)
+	  {
+		  real avg_up = thick_lip_up[i][2]/frame_num;
+		  real avg_down = thick_lip_down[i][2]/frame_num;
+		  real sd_up=0.0;
+		  real sd_down=0.0;
+		  if(frame_num>1)
+		  {
+			  sd_up = thick_lip_up[i][3]/(frame_num-1)-pow(avg_up,2)*frame_num/(frame_num-1);
+			  sd_down = thick_lip_down[i][3]/(frame_num-1)-pow(avg_down,2)*frame_num/(frame_num-1);
+			  if(sd_up<0.0) //could happen due to numerical precision
+			  { sd_up = 0.0; }
+			  else
+			  { sd_up = sqrt(sd_up); }
+			  if(sd_down<0.0) //could happen due to numerical precision
+			  { sd_down = 0.0; }
+			  else
+			  { sd_down = sqrt(sd_down); }
+		  }
+		  int typecast_id = (int) thick_lip_up[i][0];
+		  if(avg_up>0.0)
+		  {
+			  if(typecast_id == -1)
+			  { fprintf(thick_fp_lipids_up,"PROTEIN	%f	%f\n",avg_up,sd_up); }
+			  else
+			  { fprintf(thick_fp_lipids_up,"%d	%f	%f\n",typecast_id,avg_up,sd_up); }
+		  }
+		  if(avg_down>0.0)
+		  {
+			  if(typecast_id == -1)
+			  { fprintf(thick_fp_lipids_down,"PROTEIN	%f	%f\n",avg_down,sd_down); }
+			  else
+			  { fprintf(thick_fp_lipids_down,"%d	%f	%f\n",typecast_id,avg_down,sd_down); }
+		  }
+	  }
+
+	  fclose(thick_fp_lipids_up);
+	  fclose(thick_fp_lipids_down);
+	  fclose(thick_fp_over_time);
+
 	  fprintf(thick_fp_avg_pdb,"END");
   	  fprintf(thick_fp_sd_pdb,"END");
   	  fclose(thick_fp_avg_pdb);
