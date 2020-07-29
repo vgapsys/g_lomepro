@@ -1980,13 +1980,15 @@ int main(int argc,char *argv[])
 					  {
 						  for(k=0;k<lipid_num+1;k++)
 						  {
-							if(thick_lip_up[k][0]==top_index)
+							//if(thick_lip_up[k][0]==top_index)
+							if(k==top_index)
 							{
 								thick_lip_up[k][1] += grid_thick[aux_ind];
 						                thick_lip_up[k][4]=thick_lip_up[k][4]+1.0;
 								time_saver_up=1;
 							}
-							if(thick_lip_down[k][0]==bottom_index)
+							//if(thick_lip_down[k][0]==bottom_index)
+							if(k==bottom_index)
 							{
 								thick_lip_down[k][1] += grid_thick[aux_ind];
 						                thick_lip_down[k][4]=thick_lip_down[k][4]+1.0;
@@ -2003,14 +2005,15 @@ int main(int argc,char *argv[])
 				  {
 					  for(k=0;k<lipid_num;k++)
 					  {
-						if(thick_lip_up[k][0]==top_index)
+						//if(thick_lip_up[k][0]==top_index)
+						if(k==top_index)
 						{
-
 							thick_lip_up[k][1] += grid_thick[aux_ind];
 						        thick_lip_up[k][4] = thick_lip_up[k][4] + 1.0;
 							time_saver_up=1;
 						}
-						if(thick_lip_down[k][0]==bottom_index)
+						//if(thick_lip_down[k][0]==bottom_index)
+						if(k==bottom_index)
 						{
 							thick_lip_down[k][1] += grid_thick[aux_ind];
 						        thick_lip_down[k][4] = thick_lip_down[k][4] + 1.0;
@@ -2236,13 +2239,15 @@ int main(int argc,char *argv[])
 					  {
 						  for(k=0;k<lipid_num+1;k++)
 						  {
-							if(apl_lip_up[k][0]==top_index)
+							//if(apl_lip_up[k][0]==top_index)
+							if(k==top_index)
 							{
 								apl_lip_up[k][1] += area_of_cell;
 								apl_grid_up[aux_ind][0]=top_index;
 								time_saver_up=1;
 							}
-							if(apl_lip_down[k][0]==bottom_index)
+							//if(apl_lip_down[k][0]==bottom_index)
+							if(k==bottom_index)
 							{
 								apl_lip_down[k][1] += area_of_cell;
 								apl_grid_down[aux_ind][0]=bottom_index;
@@ -2259,14 +2264,16 @@ int main(int argc,char *argv[])
 				  {
 					  for(k=0;k<lipid_num;k++)
 					  {
-						if(apl_lip_up[k][0]==top_index)
+						//if(apl_lip_up[k][0]==top_index)
+						if(k==top_index)
 						{
 
 							apl_lip_up[k][1] += area_of_cell;
 							apl_grid_up[aux_ind][0]=top_index;
 							time_saver_up=1;
 						}
-						if(apl_lip_down[k][0]==bottom_index)
+						//if(apl_lip_down[k][0]==bottom_index)
+						if(k==bottom_index)
 						{
 							apl_lip_down[k][1] += area_of_cell;
 							apl_grid_down[aux_ind][0]=bottom_index;
@@ -3494,32 +3501,6 @@ if(mat)
       sfree(mat_low_dens_sd);
   }
 
-
-  /**************** free Thickness ************/
-  if(bThick)
-  {
-	  fprintf(thick_fp_avg_pdb,"END");
-  	  fprintf(thick_fp_sd_pdb,"END");
-  	  fclose(thick_fp_avg_pdb);
-  	  fclose(thick_fp_sd_pdb);
-  	  fclose(thick_fp_avg_dat);
-  	  fclose(thick_fp_sd_dat);
-  	  sfree(grid);
-  	  sfree(grid_sd);
-  	  if(mat || pdb)
-  	  {
-  		  for(foo=0; foo<smooth; foo++)
-  		  {
-  			  sfree(grid_smooth_frames[foo]);
-  		  }
-  		  sfree(grid_smooth_frames);
-  		  sfree(grid_smooth_avg);
-  	  if(mat)
-  		  { fclose(fp_mov_mat_thick); }
-  	  }
-  }
-  sfree(grid_up_avg);
-  sfree(grid_down_avg);
 
 
   /********** SPECIAL THICKNESS OUTPUT: LIPID INDECES ********/
