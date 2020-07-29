@@ -27,6 +27,7 @@
 //#include <lap.h>
 #include "pdbio.h"
 #include "gstat.h"
+#include "headers.h"
 
 
 void fill_grid(int *is_cell_prot1, int *is_cell_prot2,

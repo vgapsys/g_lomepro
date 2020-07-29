@@ -28,6 +28,7 @@
 #include "pdbio.h"
 #include "gstat.h"
 #include <fftw3.h>
+#include "headers.h"
 
 
 void filter_curve_abs(real *grid, real *out, int binx, int biny, real bin_sizex, real bin_sizey,
