@@ -160,7 +160,8 @@ int main(int argc,char *argv[])
 
     "-unsat option (default 0) defines the number of unsaturated acyl chains [0|1|2].",
     "Currently one double bond is allowed per acyl chain.",
-    "The carbons around a double bond need to be defined in a separate group in the index file. [PAR]",
+    "The carbons around a double bond need to be defined in a separate group in the index file.",
+    "In case one double bond is selected, the chain with the double bond needs to be selected as chain-1 (sn-1) [PAR]. ",
 
     "In combination with -prot, -order_val controls the Scd values (default -1) asigned to the grid points occupied by protein atoms.[PAR]",
 
