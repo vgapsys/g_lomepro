@@ -168,7 +168,7 @@ void order_param(int order_atom_num1, int order_atom_num2, int norder1, int nord
 					found_first_unsat[j]=1;
 				}
 			}
-			if( (unsat==2) && (id_i==idunsat2[found_first_unsat[j]+j*2]) )
+			else if( (unsat==2) && (id_i==idunsat2[found_first_unsat[j]+j*2]) )
 			{
 				order_lip2[j][i-1] = calc_unsat(id_i,id_min_i,id_plus_i,x,axis,found_first_unsat[j]);
 				found_first_unsat[j]=1;
