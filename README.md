@@ -13,10 +13,7 @@ Local membrane property analysis
  - FFTW: compiled fft library path
  - FFTWINCL: fft headers
 
-Afterwards, run the command
-```
-make
-```
+Afterwards, run the command: `make`
 
 Note, to compile `g_lomepro` it will be necessary to use gmx4.6 or older version, yet this is only a requirement for compilation: the software itself is compatible with the latest gromacs version (see below).
 
