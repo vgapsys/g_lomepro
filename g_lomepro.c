@@ -152,7 +152,7 @@ int main(int argc,char *argv[])
 
     "output: time averaged pdb and data matrices containing -Scd order parameters are written for",
     "every acyl chain atom for the top and bottom leaflets separately. ",
-    "Also the average -Scd values for every lipid are printed out.[PAR]",
+    "Also the average -Scd values for every lipid are printed out (standard deviation is reported in the last column).[PAR]",
 
     "NOTE: many output files are generated (acyl_chain_atoms x top_down_leaflets)[PAR]",
 
