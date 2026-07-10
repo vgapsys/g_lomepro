@@ -21,3 +21,11 @@ Note, to compile `g_lomepro` it will be necessary to use gmx4.6 or older version
 Yes.
 
 Simply, when supplying the structure file (option -s) use a .pdb instead of .tpr.
+
+## Citation
+
+    Vytautas Gapsys, Bert L. de Groot, Rodolfo Briones
+    Computational analysis of local membrane properties
+    Journal of Computer-Aided Molecular Design, 2013
+    doi:10.1007/s10822-013-9684-0
+
